@@ -46,8 +46,6 @@ namespace Hook.Request
         [JsonProperty("user_type_id")]
         public int UserTypeId { get; set; }
 
-        [Required(ErrorMessage = "shared_msisdn must be provided")]
-        [DataMember(IsRequired = true)]
         [JsonProperty("shared_msisdn")]
         public bool SharedMsisdn { get; set; }
 
@@ -64,16 +62,8 @@ namespace Hook.Request
         [JsonProperty("language_id")]
         public int LanguageId { get; set; }
 
-        [Required(ErrorMessage = "email_address must be provided")]
-        [DataMember(IsRequired = true)]
         [JsonProperty("email_address")]
         public string EmailAddress { get; set; }
-
-        [JsonProperty("sub_county_id")]
-        public long SubCountyId { get; set; }
-
-        [JsonProperty("town_id")]
-        public long TownId { get; set; }
 
         [Required(ErrorMessage = "registered_by_userName must be provided")]
         [DataMember(IsRequired = true)]

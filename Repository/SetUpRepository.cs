@@ -13,7 +13,7 @@ namespace Hook.Repository
 {
     public class SetUpRepository
     {
-        private string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
+         string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
 
         public int CreateCustomerType(string customerTypeName, string customerTypeDescription, string createdBy)
         {

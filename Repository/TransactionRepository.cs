@@ -14,12 +14,11 @@ namespace Hook.Repository
 {
     public class TransactionRepository
     {
-        private string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
+        string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
 
         RandomStringGenerator randomStringGenerator = new RandomStringGenerator();
 
         private LoyaltyRepository loyaltyRepository = new LoyaltyRepository();
-        // CustomerRepository customerRepository = new CustomerRepository();
 
         public bool AirtimePurchase(long amount, long msisdn)
         {
@@ -324,32 +323,42 @@ namespace Hook.Repository
 
         public PaymentInstrument CreatePaymentInstrument(long customerId)
         {
-            PaymentInstrument newPaymentInstrument = new PaymentInstrument
+            try
             {
-                AccountBalance = 0,
-                AccountNumber = "HK Wallet",
-                AllowCredit = true,
-                AllowDebit = true,
-                CustomerId = customerId,
-                DateLinked = GetRealDate(),
-                DateVerified = GetRealDate(),
-                IsDefaultFIAccount = false,
-                IsMobileWallet = true,
-                PaymentInstrumentTypeId = 1,
-                IsSuspended = false,
-                PaymentIntrumentAlias = "HK Wallet",
-                IsActive = true
-            };
+                PaymentInstrument newPaymentInstrument = new PaymentInstrument
+                {
+                    AccountBalance = 0,
+                    AccountNumber = "HK Wallet",
+                    AllowCredit = true,
+                    AllowDebit = true,
+                    CustomerId = customerId,
+                    DateLinked = GetRealDate(),
+                    DateVerified = GetRealDate(),
+                    IsDefaultFIAccount = false,
+                    IsMobileWallet = true,
+                    PaymentInstrumentTypeId = 1,
+                    IsSuspended = false,
+                    PaymentIntrumentAlias = "HK Wallet",
+                    IsActive = true,
+                    LoyaltyPointBalance = 0,
+                    Verified = true
+                };
 
-            using (var connection = new SqlConnection(sqlConnectionString))
-            {
-                connection.Open();
-                var affectedRows = connection.Execute("INSERT INTO PaymentInstrument (AccountBalance, AccountNumber, AllowCredit, AllowDebit, CustomerId, DateLinked, DateVerified, IsDefaultFIAccount, IsMobileWallet, PaymentInstrumentTypeId, IsSuspended, PaymentIntrumentAlias, IsActive) VALUES (@AccountBalance, @AccountNumber, @AllowCredit, @AllowDebit, @CustomerId, @DateLinked, @DateVerified, @IsDefaultFIAccount, @IsMobileWallet, @PaymentInstrumentTypeId, @IsSuspended, @PaymentIntrumentAlias, @IsActive)", new { newPaymentInstrument.AccountBalance, newPaymentInstrument.AccountNumber, newPaymentInstrument.AllowCredit, newPaymentInstrument.AllowDebit, newPaymentInstrument.CustomerId, newPaymentInstrument.DateLinked, newPaymentInstrument.DateVerified, newPaymentInstrument.IsDefaultFIAccount, newPaymentInstrument.IsMobileWallet, newPaymentInstrument.IsSuspended, newPaymentInstrument.PaymentIntrumentAlias, newPaymentInstrument.IsActive, newPaymentInstrument.PaymentInstrumentTypeId });
+                using (var connection = new SqlConnection(sqlConnectionString))
+                {
+                    connection.Open();
+                    var affectedRows = connection.Execute("INSERT INTO PaymentInstrument (AccountBalance, AccountNumber, AllowCredit, AllowDebit, CustomerId, DateLinked, DateVerified, IsDefaultFIAccount, IsMobileWallet, PaymentInstrumentTypeId, IsSuspended, PaymentIntrumentAlias, IsActive,LoyaltyPointBalance,Verified) VALUES (@AccountBalance, @AccountNumber, @AllowCredit, @AllowDebit, @CustomerId, @DateLinked, @DateVerified, @IsDefaultFIAccount, @IsMobileWallet, @PaymentInstrumentTypeId, @IsSuspended, @PaymentIntrumentAlias, @IsActive,@LoyaltyPointBalance,@Verified)", new { newPaymentInstrument.AccountBalance, newPaymentInstrument.AccountNumber, newPaymentInstrument.AllowCredit, newPaymentInstrument.AllowDebit, newPaymentInstrument.CustomerId, newPaymentInstrument.DateLinked, newPaymentInstrument.DateVerified, newPaymentInstrument.IsDefaultFIAccount, newPaymentInstrument.IsMobileWallet, newPaymentInstrument.IsSuspended, newPaymentInstrument.PaymentIntrumentAlias, newPaymentInstrument.IsActive, newPaymentInstrument.PaymentInstrumentTypeId, newPaymentInstrument.LoyaltyPointBalance, newPaymentInstrument.Verified });
 
-                connection.Close();
+                    connection.Close();
+                }
+
+                return GetPaymentInstrumentByCustomerId(customerId);
+
             }
-
-            return GetPaymentInstrumentByCustomerId(customerId);
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
         public PaymentInstrument GetPaymentInstrumentByCustomerId(long customerId)

@@ -14,13 +14,13 @@ namespace Hook.Repository
 {
     public class BillPaymentRepository
     {
-        CustomerRepository customerRepository = new CustomerRepository();
-        TransactionRepository transactionRepository = new TransactionRepository();
 
-        private string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
+         string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
 
         public Biller CreateBiller(int supportApplicationId, long customerId, long notificationCustomerId, int billerTypeId, string billerName, string billerNumber, string emailAddress, string businessLocation, long subsidizedAmount, DateTime terminationDate, long operationPaymentInstrumentId, long overflowPaymentInstrumentId, bool isActive, bool showInUI)
         {
+            CustomerRepository customerRepository = new CustomerRepository();
+            TransactionRepository transactionRepository = new TransactionRepository();
             try
             {
                 DateTime transactiontime = GetRealDate();

@@ -14,8 +14,7 @@ namespace Hook.Repository
 {
     public class LoyaltyRepository
     {
-        private string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
-        TransactionRepository transactionRepository = new TransactionRepository();
+        string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
 
       //  private long initialTransactionFrequency = 1;
         private int baseCurrencyConversionUnit = 100;
@@ -397,6 +396,7 @@ namespace Hook.Repository
 
         public LoyaltyPointExecutionBot TransferingLoyaltyPoints(int organizationId, long sourceCustomerId, long sourcePaymentInstrumentId, long destinationCustomerId, long destinationPaymentInstrumentId, long pointsToTransfer, MasterTransactionRecord masterTransactionRecord)
         {
+            TransactionRepository transactionRepository = new TransactionRepository();
             masterTransactionRecord = null;
             HelperRepository helperRespository = new HelperRepository();
             TransactionType transactionType = masterTransactionRecord == null ? helperRespository.GetTransactionTypeByTransactionTypeId((long)TransactionTypes.LoyaltyPointTransfer) : helperRespository.GetTransactionTypeByTransactionTypeId(masterTransactionRecord.TransactionTypeId);

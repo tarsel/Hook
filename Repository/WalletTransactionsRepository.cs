@@ -13,14 +13,13 @@ namespace Hook.Repository
 {
     public class WalletTransactionsRepository
     {
-        private string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
-        TransactionRepository transactionRepository = new TransactionRepository();
-        CustomerRepository customerRepository = new CustomerRepository();
+         string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
 
         public ReverseTransactionResult ReverseWalletTransaction(long transactionId, string updatedByUsername)
         {
             int reversalTransactionTypId = (int)TransactionTypes.ReversalTransaction;
             DateTime transactionDate = GetRealDate();
+            TransactionRepository transactionRepository = new TransactionRepository();
 
             try
             {
@@ -314,6 +313,8 @@ namespace Hook.Repository
 
         public void MatchPaymentInstrumentToCustomer(long customerId, long paymentInstrumentId, out Customer customer, out PaymentInstrument paymentInstrument)
         {
+            CustomerRepository customerRepository = new CustomerRepository();
+            TransactionRepository transactionRepository = new TransactionRepository();
             paymentInstrument = null;
             customer = null;
 
@@ -347,6 +348,7 @@ namespace Hook.Repository
 
         public decimal BalanceEnquiry(long customerId, long paymentInstrumentId, string accountPin, bool chargedRequest)
         {
+            CustomerRepository customerRepository = new CustomerRepository();
             decimal customerBalance = -1;
             Customer customer = null;
             PaymentInstrument customerPaymentInstrument = null;
@@ -523,6 +525,7 @@ namespace Hook.Repository
                 //        }, TaskContinuationOptions.OnlyOnFaulted);
                 //    }
                 //});
+                
 
                 return customerBalance;
             }

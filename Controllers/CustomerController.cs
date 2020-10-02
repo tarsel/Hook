@@ -13,6 +13,9 @@ using Hook.Response;
 
 namespace Hook.Controllers
 {
+    /// <summary>
+    /// Customer Module
+    /// </summary>
     public class CustomerController : ApiController
     {
         CustomerRepository customerRepository = new CustomerRepository();
@@ -68,7 +71,7 @@ namespace Hook.Controllers
                     return BadRequest(ModelState);
                 }
 
-                CreateCustomerResult createCustomerResult = customerRepository.CreateNewCustomer(request.CustomerTypeId, request.EmailAddress, request.FirstName, request.FullyRegistered, request.IdNumber, request.IdTypeId, request.LanguageId, request.LastName, request.MiddleName, request.RegisteredByUserName, request.IsTestCustomer, request.TownId, request.UserName, request.UserTypeId, request.SubCountyId, long.Parse(request.Msisdn), request.SharedMsisdn);
+                CreateCustomerResult createCustomerResult = customerRepository.CreateNewCustomer(request.CustomerTypeId, request.EmailAddress, request.FirstName, request.FullyRegistered, request.IdNumber, request.IdTypeId, request.LanguageId, request.LastName, request.MiddleName, request.RegisteredByUserName, request.IsTestCustomer,  request.UserName, request.UserTypeId, long.Parse(request.Msisdn), request.SharedMsisdn);
 
                 return Ok(new CreateCustomerResult
                 {

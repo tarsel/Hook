@@ -15,7 +15,7 @@ namespace Hook.Repository
 {
     public class HelperRepository
     {
-        private string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
+         string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
         static TransactionRepository transactionRepository = new TransactionRepository();
         CustomerRepository customerRepository = new CustomerRepository();
         static RandomStringGenerator pinGenerator = new RandomStringGenerator();
