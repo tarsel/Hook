@@ -178,6 +178,7 @@
     <Compile Include="Models\BillerTransactionGL.cs" />
     <Compile Include="Models\CumulativeCustomerTransactionAmount.cs" />
     <Compile Include="Models\Customer.cs" />
+    <Compile Include="Models\CustomerLogin.cs" />
     <Compile Include="Models\CustomerLoyaltyPoint.cs" />
     <Compile Include="Models\CustomerTransactionGL.cs" />
     <Compile Include="Models\CustomerType.cs" />
@@ -206,9 +207,11 @@
     <Compile Include="Repository\TransactionRepository.cs" />
     <Compile Include="Repository\WalletTransactionsRepository.cs" />
     <Compile Include="Request\BuyAirtimeRequest.cs" />
+    <Compile Include="Request\ChangePinRequest.cs" />
     <Compile Include="Request\CheckPointsBalanceRequest.cs" />
     <Compile Include="Request\CreateCustomerRequest.cs" />
     <Compile Include="Request\CustomerDetailsRequest.cs" />
+    <Compile Include="Request\CustomerLoginRequest.cs" />
     <Compile Include="Request\CustomerTypeRequest.cs" />
     <Compile Include="Request\GenericRequest.cs" />
     <Compile Include="Request\IdTypeRequest.cs" />
@@ -226,6 +229,7 @@
     <Compile Include="Request\UserTypeRequest.cs" />
     <Compile Include="Response\CreateCustomerResult.cs" />
     <Compile Include="Response\CustomerDetailsResponse.cs" />
+    <Compile Include="Response\CustomerLoginResponse.cs" />
     <Compile Include="Response\CustomerLoyaltyPointResponse.cs" />
     <Compile Include="Response\CustomerTypeResponse.cs" />
     <Compile Include="Response\GenericResponse.cs" />

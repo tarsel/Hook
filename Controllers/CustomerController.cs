@@ -10,6 +10,7 @@ using Hook.Models;
 using Hook.Repository;
 using Hook.Request;
 using Hook.Response;
+using Microsoft.Ajax.Utilities;
 
 namespace Hook.Controllers
 {
@@ -71,7 +72,7 @@ namespace Hook.Controllers
                     return BadRequest(ModelState);
                 }
 
-                CreateCustomerResult createCustomerResult = customerRepository.CreateNewCustomer(request.CustomerTypeId, request.EmailAddress, request.FirstName, request.FullyRegistered, request.IdNumber, request.IdTypeId, request.LanguageId, request.LastName, request.MiddleName, request.RegisteredByUserName, request.IsTestCustomer,  request.UserName, request.UserTypeId, long.Parse(request.Msisdn), request.SharedMsisdn);
+                CreateCustomerResult createCustomerResult = customerRepository.CreateNewCustomer(request.CustomerTypeId, request.EmailAddress, request.FirstName, request.FullyRegistered, request.IdNumber, request.IdTypeId, request.LanguageId, request.LastName, request.MiddleName, request.RegisteredByUserName, request.IsTestCustomer, request.UserName, request.UserTypeId, long.Parse(request.Msisdn), request.SharedMsisdn);
 
                 return Ok(new CreateCustomerResult
                 {
@@ -111,9 +112,9 @@ namespace Hook.Controllers
 
             try
             {
-                Customer cust = customerRepository.UpdateCustomer(req.CustomerId, req.AccessChannelId, req.CustomerTypeId, req.EmailAddress, req.FirstName, req.FullyRegistered, req.IdNumber, req.IdTypeId, req.InformationModeId, req.IsStaff, req.IsTestCustomer, req.LanguageId, req.LastName, req.MiddleName, req.PostalAddress, req.TaxNumber, req.TownId, long.Parse(req.Msisdn), req.UserTypeId, req.SubCountyId, req.UpdatedBy);
+                Customer cust = customerRepository.UpdateCustomer(req.CustomerId, req.AccessChannelId, req.CustomerTypeId, req.EmailAddress, req.FirstName, req.FullyRegistered, req.IdNumber, req.IdTypeId, req.InformationModeId, req.IsStaff, req.IsTestCustomer, req.LanguageId, req.LastName, req.MiddleName, req.PostalAddress, req.TaxNumber, long.Parse(req.Msisdn), req.UserTypeId, req.UpdatedBy);
 
-                return Ok(new CustomerDetailsResponse { CustomerId = cust.CustomerId, AccessChannelId = cust.AccessChannelId, BlacklistReasonId = cust.BlacklistReasonId, CreatedDate = cust.CreatedDate, CustomerTypeId = cust.CustomerTypeId, DeactivatedAccount = cust.DeactivatedAccount, DeactivatedDate = cust.DeactivatedDate, DeactivateMsisdns = cust.DeactivateMsisdns, EmailAddress = cust.EmailAddress, FirstName = cust.FirstName, FullyRegistered = cust.FullyRegistered, IdNumber = cust.IdNumber, IdTypeId = cust.IdTypeId, InformationModeId = cust.InformationModeId, IsBlacklisted = cust.IsBlacklisted, IsStaff = cust.IsStaff, IsTestCustomer = cust.IsTestCustomer, LanguageId = cust.LanguageId, LastName = cust.LastName, LoginAttempts = cust.LoginAttempts, MiddleName = cust.MiddleName, Msisdn = cust.Msisdn, PostalAddress = cust.PostalAddress, RegisteredByUsername = cust.RegisteredByUsername, SubCountyId = cust.SubCountyId, TaxNumber = cust.TaxNumber, TermsAccepted = cust.TermsAccepted, TermsAcceptedDate = cust.TermsAcceptedDate, TownId = cust.TownId, UserName = cust.UserName, UserTypeId = cust.UserTypeId, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
+                return Ok(new CustomerDetailsResponse { CustomerId = cust.CustomerId, AccessChannelId = cust.AccessChannelId, BlacklistReasonId = cust.BlacklistReasonId, CreatedDate = cust.CreatedDate, CustomerTypeId = cust.CustomerTypeId, DeactivatedAccount = cust.DeactivatedAccount, DeactivatedDate = cust.DeactivatedDate, DeactivateMsisdns = cust.DeactivateMsisdns, EmailAddress = cust.EmailAddress, FirstName = cust.FirstName, FullyRegistered = cust.FullyRegistered, IdNumber = cust.IdNumber, IdTypeId = cust.IdTypeId, InformationModeId = cust.InformationModeId, IsBlacklisted = cust.IsBlacklisted, IsStaff = cust.IsStaff, IsTestCustomer = cust.IsTestCustomer, LanguageId = cust.LanguageId, LastName = cust.LastName, LoginAttempts = cust.LoginAttempts, MiddleName = cust.MiddleName, Msisdn = cust.Msisdn, PostalAddress = cust.PostalAddress, RegisteredByUsername = cust.RegisteredByUsername, TaxNumber = cust.TaxNumber, TermsAccepted = cust.TermsAccepted, TermsAcceptedDate = cust.TermsAcceptedDate, UserName = cust.UserName, UserTypeId = cust.UserTypeId, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
             }
             catch (Exception ex)
             {
@@ -338,6 +339,67 @@ namespace Hook.Controllers
                 {
                     return Ok(new GenericResponse { IsSuccessful = false, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
                 }
+
+            }
+            catch (Exception ex)
+            {
+                return Ok(new GenericResponse { IsSuccessful = false, Message = ex.Message, StatusCode = (int)HttpStatusCode.InternalServerError });
+            }
+        }
+
+        /// <summary>
+        /// Customer Login
+        /// </summary>
+        /// <param name="req"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [ResponseType(typeof(GenericResponse))]
+        public IHttpActionResult CustomerLogin(CustomerLoginRequest req)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                int loginAttepts = 0;
+                Customer customer = customerRepository.CustomerLogin(req.Msisdn, req.Pin, out loginAttepts);
+
+                if (customer != null)
+                {
+                    return Ok(new GenericResponse { IsSuccessful = true, Message = loginAttepts.ToString(), StatusCode = (int)HttpStatusCode.OK });
+                }
+                else
+                {
+                    return Ok(new GenericResponse { IsSuccessful = false, Message = loginAttepts.ToString(), StatusCode = (int)HttpStatusCode.OK });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Ok(new CustomerLoginResponse { Message = ex.Message, StatusCode = (int)HttpStatusCode.InternalServerError, IsSuccessful = false });
+            }
+        }
+
+        /// <summary>
+        /// Change Customer Pin
+        /// </summary>
+        /// <param name="req"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [ResponseType(typeof(GenericResponse))]
+        public IHttpActionResult ChangePin(ChangePinRequest req)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                bool transactionResultDto = customerRepository.ChangeCustomerPIN(req.Msisdn, req.OldPin, req.NewPin);
+
+                return Ok(new GenericResponse { IsSuccessful = transactionResultDto, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
 
             }
             catch (Exception ex)

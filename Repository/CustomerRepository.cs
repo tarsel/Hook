@@ -63,7 +63,8 @@ namespace Hook.Repository
                     Nonce = null,
                     Salt = randomStringGenerator.NextString(256, true, true, true, true),
                     Msisdn = msisdn,
-                    IsStaff = false
+                    IsStaff = false,
+                    BlacklistReasonId = 1
                 };
 
                 if (userTypeId == (int)UserTypes.Business || userTypeId == (int)UserTypes.Company)
@@ -226,12 +227,12 @@ namespace Hook.Repository
             }
         }
 
-        public Customer UpdateCustomer(long customerId, long accessChannelId, long customerTypeId, string emailAddress, string firstName, bool fullyRegistered, string idNumber, long idTypeId, long informationModeId, bool isStaff, bool isTestCustomer, long languageId, string lastName, string middleName, string postalAddress, string taxNumber, long townId, long msisdn, long userTypeId, long subCountyId, string updatedBy)
+        public Customer UpdateCustomer(long customerId, long accessChannelId, long customerTypeId, string emailAddress, string firstName, bool fullyRegistered, string idNumber, long idTypeId, long informationModeId, bool isStaff, bool isTestCustomer, long languageId, string lastName, string middleName, string postalAddress, string taxNumber, long msisdn, long userTypeId, string updatedBy)
         {
             using (var connection = new SqlConnection(sqlConnectionString))
             {
                 connection.Open();
-                var affectedRows = connection.Execute("UPDATE Customer SET CustomerTypeId=@CustomerTypeId, FirstName=@FirstName, LastName=@LastName, MiddleName=@MiddleName, LanguageId=@LanguageId, UserTypeId=@UserTypeId, FullyRegistered=@FullyRegistered, EmailAddress=@EmailAddress, InformationModeId=@InformationModeId, IsTestCustomer=@IsTestCustomer, IdNumber=@IdNumber, IdTypeId=@IdTypeId, AccessChannelId=@AccessChannelId, TownId=@TownId, SubCountyId=@SubCountyId, TaxNumber=@TaxNumber, Msisdn=@Msisdn, IsStaff=@IsStaff, PostalAddress=@PostalAddress, UpdatedBy=@UpdatedBy, UpdatedDate=@UpdatedDate WHERE CustomerId=@CustomerId", new { CustomerTypeId = customerTypeId, FirstName = firstName.ToUpper(), LastName = lastName.ToUpper(), MiddleName = middleName.ToUpper(), LanguageId = languageId, UserTypeId = userTypeId, FullyRegistered = fullyRegistered, EmailAddress = emailAddress, InformationModeId = informationModeId, IsTestCustomer = isTestCustomer, IdNumber = idNumber, IdTypeId = idTypeId, AccessChannelId = accessChannelId, TownId = townId, SubCountyId = subCountyId, TaxNumber = taxNumber, Msisdn = msisdn, IsStaff = isStaff, CustomerId = customerId, PostalAddress = postalAddress, UpdatedBy = updatedBy, UpdatedDate = GetRealDate() });
+                var affectedRows = connection.Execute("UPDATE Customer SET CustomerTypeId=@CustomerTypeId, FirstName=@FirstName, LastName=@LastName, MiddleName=@MiddleName, LanguageId=@LanguageId, UserTypeId=@UserTypeId, FullyRegistered=@FullyRegistered, EmailAddress=@EmailAddress, InformationModeId=@InformationModeId, IsTestCustomer=@IsTestCustomer, IdNumber=@IdNumber, IdTypeId=@IdTypeId, AccessChannelId=@AccessChannelId, TaxNumber=@TaxNumber, Msisdn=@Msisdn, IsStaff=@IsStaff, PostalAddress=@PostalAddress, UpdatedBy=@UpdatedBy, UpdatedDate=@UpdatedDate WHERE CustomerId=@CustomerId", new { CustomerTypeId = customerTypeId, FirstName = firstName.ToUpper(), LastName = lastName.ToUpper(), MiddleName = middleName.ToUpper(), LanguageId = languageId, UserTypeId = userTypeId, FullyRegistered = fullyRegistered, EmailAddress = emailAddress, InformationModeId = informationModeId, IsTestCustomer = isTestCustomer, IdNumber = idNumber, IdTypeId = idTypeId, AccessChannelId = accessChannelId, TaxNumber = taxNumber, Msisdn = msisdn, IsStaff = isStaff, CustomerId = customerId, PostalAddress = postalAddress, UpdatedBy = updatedBy, UpdatedDate = GetRealDate() });
 
                 connection.Close();
             }
@@ -469,6 +470,181 @@ namespace Hook.Repository
         }
 
 
+        public Customer CustomerLogin(string msisdn, string Pin, out int loginAttempts)
+        {
+            try
+            {
+                loginAttempts = 0;
+                Customer customer = GetCustomerByMsisdn(long.Parse(msisdn));
+
+                if (customer == null)
+                {
+                    throw new Exception(string.Format("CA0004 - Phone No '{0}' does not exist", msisdn));
+                }
+
+                if (customer.Nonce == null)
+                {
+                    throw new Exception("CA0001 - Customer PIN not set");
+                }
+
+                if (customer.TermsAccepted == false)
+                {
+                    throw new Exception("CA0005 - Customer has not accepted Terms And Conditions");
+                }
+
+                if (customer.BlacklistReasonId > 1)
+                {
+                    throw new Exception("CA0006 - Customer is blacklisted therefore cannot login.");
+                }
+
+                ManagePin managePin = new ManagePin();
+                long passwordHashKeyId = long.Parse(EncDec.Decrypt(customer.Nonce, customer.Salt));
+
+                bool validPin = managePin.ValidatePin(passwordHashKeyId, Pin);
+
+                if (validPin)
+                {
+                    customer.LoginAttempts = 0;
+                }
+                else
+                {
+                    if (customer.LoginAttempts < 2)
+                    {
+                        customer.LoginAttempts += 1;
+                    }
+                    else
+                    {
+                        customer.LoginAttempts += 1;
+                        customer.IsBlacklisted = true;
+                        customer.BlacklistReasonId = (int)BlacklistReasons.PinBlocked; /*Pin blocked for entering it incorrectly 3 times*/
+                    }
+
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE Customer SET LoginAttempts=@LoginAttempts, IsBlacklisted=@IsBlacklisted, BlacklistReasonId=@BlacklistReasonId WHERE CustomerId=@CustomerId", new { LoginAttempts = customer.LoginAttempts, IsBlacklisted = customer.IsBlacklisted, BlacklistReasonId = customer.BlacklistReasonId, CustomerId = customer.CustomerId });
+
+                        connection.Close();
+                    }
+                    loginAttempts = customer.LoginAttempts;
+                    return null;
+                }
+
+                using (var connection = new SqlConnection(sqlConnectionString))
+                {
+                    connection.Open();
+                    var affectedRows = connection.Execute("UPDATE Customer SET LoginAttempts=@LoginAttempts, IsBlacklisted=@IsBlacklisted, BlacklistReasonId=@BlacklistReasonId WHERE CustomerId=@CustomerId", new { LoginAttempts = customer.LoginAttempts, IsBlacklisted = customer.IsBlacklisted, BlacklistReasonId = customer.BlacklistReasonId, CustomerId = customer.CustomerId });
+
+                    connection.Close();
+                }
+
+                return customer;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public bool ChangeCustomerPIN(string msisdn, string oldPin, string newPin)
+        {
+            DateTime transactionTime = GetRealDate();
+            //bool changePinResult = false;
+
+            Customer customer = null;
+
+            int loginAttempts = 0;
+            customer = CustomerLogin(msisdn, oldPin, out loginAttempts);
+
+            if (customer != null)
+            {
+                try
+                {
+                    if (customer.Nonce == null)
+                    {
+                        throw new Exception("CA0001 - Customer PIN not set");
+                    }
+
+                    if (!customer.TermsAccepted)
+                    {
+                        throw new Exception("CA0005 - Customer has not accepted Terms And Conditions");
+                    }
+
+                    if (customer.BlacklistReasonId > (int)BlacklistReasons.Active)
+                    {
+                        throw new Exception("CA0006 - Customer is blacklisted therefore cannot login.");
+                    }
+
+                    long currentPasswordHashKeyId = long.Parse(EncDec.Decrypt(customer.Nonce, customer.Salt));
+
+                    PasswordHashKey currentPhk = null;
+                    //Fetch the password harshkey record being accessed
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        currentPhk = connection.Query<PasswordHashKey>("SELECT * FROM PasswordHashKey WHERE PasswordHashKeyId=@PasswordHashKeyId", new { PasswordHashKeyId = currentPasswordHashKeyId }).SingleOrDefault();
+                    }
+                    //Delete the record
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        var affectedRows = connection.Execute("DELETE PasswordHashKey WHERE PasswordHashKeyId=@PasswordHashKeyId", new { PasswordHashKeyId = currentPhk.PasswordHashKeyId });
+                    }
+
+                    customer.Nonce = null;
+                    int pinValue = 0;
+                    bool pinParsedSuccessfully = int.TryParse(newPin, out pinValue);
+
+                    if (!pinParsedSuccessfully)
+                    {
+                        throw new Exception("CA0009 - Customer Pin is in invalid format");
+                    }
+
+                    customer = GetCustomerByMsisdn(long.Parse(msisdn));
+
+                    int customerPinLength = 4;
+
+                    if (newPin.Length != customerPinLength)
+                    {
+                        throw new Exception(string.Format("CA0003 - Invalid Customer PIN Length. The allowed Pin length is {0} Characters long.", customerPinLength));
+                    }
+
+                    ManagePin managePin = new ManagePin();
+                    long passwordHashKeyId = managePin.EncryptPin(newPin, true);
+
+                    string salt = customer.Salt;
+
+                    if (string.IsNullOrEmpty(salt))
+                    {
+                        salt = randomStringGenerator.NextString(256, true, true, true, true);
+                        customer.Salt = salt;
+                    }
+
+                    customer.Nonce = EncDec.Encrypt(passwordHashKeyId.ToString(), salt);
+
+                    //Update the new PIN
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE Customer SET Nonce=@Nonce, Salt=@Salt, BlacklistReasonId=@BlacklistReasonId WHERE CustomerId=@CustomerId", new { Nonce = customer.Nonce, Salt = customer.Salt, CustomerId = customer.CustomerId, BlacklistReasonId = customer.BlacklistReasonId });
+
+                        connection.Close();
+                    }
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
+            }
+            else
+            {
+                //changePinResult = false;
+                throw new Exception("Invalid customer login");
+            }
+        }
+
+
+
         public DateTime GetRealDate()
         {
             //Set the time zone information to E. Africa Standard Time 
@@ -478,6 +654,8 @@ namespace Hook.Repository
 
             return dateTime;
         }
+
+
 
         //public bool BlacklistAccount(long customerId, int blacklistReasonId, string blacklistedByUsername, string blacklistDescription)
         //{

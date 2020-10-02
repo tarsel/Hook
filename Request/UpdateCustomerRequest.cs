@@ -46,12 +46,8 @@ namespace Hook.Request
         public string PostalAddress { get; set; }
         [JsonProperty("tax_number")]
         public string TaxNumber { get; set; }
-        [JsonProperty("town_id")]
-        public long TownId { get; set; }
         [JsonProperty("user_type_id")]
         public long UserTypeId { get; set; }
-        [JsonProperty("sub_county_id")]
-        public long SubCountyId { get; set; }
         [JsonProperty("msisdn")]
         public string Msisdn { get; set; }
         [JsonProperty("updated_by")]
