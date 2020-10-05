@@ -16,11 +16,11 @@ namespace Hook.Repository
     {
         string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
 
-      //  private long initialTransactionFrequency = 1;
+        //  private long initialTransactionFrequency = 1;
         private int baseCurrencyConversionUnit = 100;
 
 
-        public CustomerLoyaltyPoint GetCustomerLoyaltyPointsByPaymentInstrument(int organizationId, long customerId, long paymentInstrumentId)
+        public CustomerLoyaltyPoint GetCustomerLoyaltyPointsByPaymentInstrument(long paymentInstrumentId)
         {
             try
             {
@@ -30,7 +30,7 @@ namespace Hook.Repository
                 {
                     connection.Open();
 
-                    customerLoyaltyPoint = connection.Query<CustomerLoyaltyPoint>("SELECT * FROM CustomerLoyaltyPoint WHERE OrganizationId=@OrganizationId AND PaymentInstrumentId=@PaymentInstrumentId AND CustomerId=@CustomerId", new { OrganizationId = organizationId, PaymentInstrumentId = paymentInstrumentId, CustomerId = customerId }).SingleOrDefault();
+                    customerLoyaltyPoint = connection.Query<CustomerLoyaltyPoint>("SELECT * FROM CustomerLoyaltyPoint WHERE PaymentInstrumentId=@PaymentInstrumentId", new { PaymentInstrumentId = paymentInstrumentId }).SingleOrDefault();
 
                     connection.Close();
                 }
@@ -59,7 +59,7 @@ namespace Hook.Repository
         private bool VerifySufficientLoyaltyPoints(int organizationId, long customerId, long paymentInstrumentId, long pointsToRedeem, out long inAccountPointBalance)
         {
             inAccountPointBalance = 0;
-            CustomerLoyaltyPoint customerLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(organizationId, customerId, paymentInstrumentId);
+            CustomerLoyaltyPoint customerLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(paymentInstrumentId);
 
             if (customerLoyaltyPoint == null)
                 return false;
@@ -76,48 +76,472 @@ namespace Hook.Repository
             }
         }
 
-        public CustomerLoyaltyPoint CreatePoints(int organizationId, long paymentInstrumentId, long amount)
+        //public CustomerLoyaltyPoint CreatePoints(int organizationId, long paymentInstrumentId, long amount)
+        //{
+        //    try
+        //    {
+        //        double percentage = 0.02;
+
+        //        double points1 = amount * percentage;
+
+        //        long points = long.Parse(points1.ToString());
+        //        CustomerLoyaltyPoint customerLoyaltyPoint = GetCustomerLoyaltyPointByMinified(organizationId, paymentInstrumentId);
+
+        //        if (customerLoyaltyPoint != null)
+        //        {
+        //            using (var connection = new SqlConnection(sqlConnectionString))
+        //            {
+        //                connection.Open();
+        //                var affectedRows = connection.Execute("UPDATE CustomerLoyaltyPoint SET CumulativePoints=@CumulativePoints, CumulativeTransactionAmount=@CumulativeTransactionAmount WHERE CustomerLoyaltyPointId = @CustomerLoyaltyPointId", new { CumulativePoints = customerLoyaltyPoint.CumulativePoints + points, CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount + amount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId });
+
+        //                connection.Close();
+
+        //                return GetCustomerLoyaltyPointByMinified(organizationId, paymentInstrumentId);
+        //            }
+
+        //        }
+        //        else
+        //        {
+        //            long cumulativeFeeAmount = 0;
+        //            using (var connection = new SqlConnection(sqlConnectionString))
+        //            {
+        //                connection.Open();
+        //                var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId, @CumulativeFeeAmount, @CumulativePoints,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, cumulativeFeeAmount, points, amount, organizationId });
+
+        //                connection.Close();
+
+        //                return GetCustomerLoyaltyPointByMinified(organizationId, paymentInstrumentId);
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new Exception(ex.Message);
+        //    }
+        //}
+
+
+        public CustomerLoyaltyPoint CreatePoints(int organizationId, long paymentInstrumentId, long amount, string refererRefNo, int operationType, long senderCustomerId, long receivingMsisdn)
         {
+            CustomerRepository customerRepository = new CustomerRepository();
+            TransactionRepository transactionRepository = new TransactionRepository();
+
             try
             {
-                double percentage = 0.02;
+                CustomerLoyaltyPoint customerLoyaltyPoint = null;
+                PaymentInstrument PI = null;
+                double buyerPercentage = 0.02;
+                double refererPercentage = 0.01;
 
-                double points1 = amount * percentage;
+                //have buyer points and referer points based on their points percentatges.
+                double points1 = amount * buyerPercentage;
+                double points2 = amount * refererPercentage;
 
-                long points = long.Parse(points1.ToString());
-                CustomerLoyaltyPoint customerLoyaltyPoint = GetCustomerLoyaltyPointByMinified(organizationId, paymentInstrumentId);
+                long buyerPoints = long.Parse(points1.ToString());
+                long refererPoints = long.Parse(points2.ToString());
 
-                if (customerLoyaltyPoint != null)
+                Customer cust = customerRepository.GetCustomerByReferalNo(refererRefNo);
+
+
+                PI = transactionRepository.GetPaymentInstrumentByCustomerId(cust.CustomerId);
+
+                if (PI != null)
                 {
-                    using (var connection = new SqlConnection(sqlConnectionString))
+                    customerLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(PI.PaymentInstrumentId);
+
+                    if (customerLoyaltyPoint != null)
                     {
-                        connection.Open();
-                        var affectedRows = connection.Execute("UPDATE CustomerLoyaltyPoint SET CumulativePoints=@CumulativePoints, CumulativeTransactionAmount=@CumulativeTransactionAmount WHERE CustomerLoyaltyPointId = @CustomerLoyaltyPointId", new { CumulativePoints = customerLoyaltyPoint.CumulativePoints + points, CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount + amount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId });
+                        customerLoyaltyPoint = AddPoints(organizationId, paymentInstrumentId, amount, buyerPoints, refererPoints, PI.PaymentInstrumentId, operationType, cust);
 
-                        connection.Close();
+                        Customer sender = customerRepository.GetCustomerByCustomerId(senderCustomerId);
+                        ////Send Buy Airtime Sms 
+                        //messageRepository.PurchaseAirtimeSms(sender, receivingMsisdn, amount, DateTime.Now, "", customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance, true, "", true);
 
-                        return GetCustomerLoyaltyPointByMinified(organizationId, paymentInstrumentId);
+                        return new CustomerLoyaltyPoint { CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount, CumulativePoints = customerLoyaltyPoint.CumulativePoints, CumulativeFeeAmount = customerLoyaltyPoint.CumulativeFeeAmount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId, IsFrozen = customerLoyaltyPoint.IsFrozen, OrganizationId = customerLoyaltyPoint.OrganizationId, PaymentInstrumentId = customerLoyaltyPoint.PaymentInstrumentId, AvailablePoints = customerLoyaltyPoint.AvailablePoints };
                     }
+                    else { return null; }
 
                 }
                 else
                 {
-                    long cumulativeFeeAmount = 0;
-                    using (var connection = new SqlConnection(sqlConnectionString))
+                    customerLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(paymentInstrumentId);
+
+                    if (customerLoyaltyPoint != null)
                     {
-                        connection.Open();
-                        var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId, @CumulativeFeeAmount, @CumulativePoints,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, cumulativeFeeAmount, points, amount, organizationId });
+                        customerLoyaltyPoint.CumulativePoints = customerLoyaltyPoint.CumulativePoints + buyerPoints;
+                        customerLoyaltyPoint.CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount + amount;
 
-                        connection.Close();
+                        PI = transactionRepository.GetPaymentInstrumentByCustomerId(customerLoyaltyPoint.CustomerId);
 
-                        return GetCustomerLoyaltyPointByMinified(organizationId, paymentInstrumentId);
+                        PI.LoyaltyPointBalance = PI.LoyaltyPointBalance + buyerPoints;
+                        PI.AccountBalance = PI.AccountBalance + buyerPoints;
+
+                        //Update the Customer Loyalty Point table
+                        using (var connection = new SqlConnection(sqlConnectionString))
+                        {
+                            connection.Open();
+                            var affectedRows = connection.Execute("UPDATE CustomerLoyaltyPoint SET CumulativePoints=@CumulativePoints, CumulativeTransactionAmount=@CumulativeTransactionAmount WHERE CustomerLoyaltyPointId = @CustomerLoyaltyPointId", new { CumulativePoints = customerLoyaltyPoint.CumulativePoints, CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId });
+
+                            connection.Close();
+                        }
+
+                        //Update the main account 
+                        using (var connection = new SqlConnection(sqlConnectionString))
+                        {
+                            connection.Open();
+                            var affectedRows = connection.Execute("UPDATE PaymentInstrument SET LoyaltyPointBalance=@LoyaltyPointBalance, AccountBalance=@AccountBalance WHERE PaymentInstrumentId=@PaymentInstrumentId", new { LoyaltyPointBalance = PI.LoyaltyPointBalance, AccountBalance = PI.AccountBalance, PaymentInstrumentId = PI.PaymentInstrumentId });
+
+                            connection.Close();
+                        }
+
+                        Customer sender = customerRepository.GetCustomerByCustomerId(senderCustomerId);
+                        ////Send Buy Airtime Sms 
+                        //messageRepository.PurchaseAirtimeSms(sender, receivingMsisdn, amount, DateTime.Now, "", customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance, true, "", true);
+
+                        return new CustomerLoyaltyPoint { CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount, CumulativePoints = customerLoyaltyPoint.CumulativePoints, CumulativeFeeAmount = customerLoyaltyPoint.CumulativeFeeAmount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId, IsFrozen = customerLoyaltyPoint.IsFrozen, OrganizationId = customerLoyaltyPoint.OrganizationId, PaymentInstrumentId = customerLoyaltyPoint.PaymentInstrumentId, AvailablePoints = customerLoyaltyPoint.AvailablePoints };
                     }
+                    else
+                    {
+                        // customerLoyaltyPoint = context.CustomerLoyaltyPoints.Add(new CustomerLoyaltyPoint { PaymentInstrumentId = paymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = buyerPoints, IsFrozen = false, CumulativeTransactionAmount = amount, OrganizationId = organizationId });
+
+                        //Add fresh points to a fresh customer
+                        using (var connection = new SqlConnection(sqlConnectionString))
+                        {
+                            connection.Open();
+                            var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, CumulativeFeeAmount = 0, buyerPoints, IsFrozen = false, amount, organizationId });
+
+                            connection.Close();
+                        }
+
+
+                        PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(paymentInstrumentId);
+                        PIs.LoyaltyPointBalance = buyerPoints;
+                        PIs.AccountBalance = buyerPoints;
+                        //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
+
+
+                        //Update the main account 
+                        using (var connection = new SqlConnection(sqlConnectionString))
+                        {
+                            connection.Open();
+                            var affectedRows = connection.Execute("UPDATE PaymentInstrument SET LoyaltyPointBalance=@LoyaltyPointBalance, AccountBalance=@AccountBalance WHERE PaymentInstrumentId=@PaymentInstrumentId", new { LoyaltyPointBalance = PIs.LoyaltyPointBalance, AccountBalance = PIs.AccountBalance, PaymentInstrumentId = PIs.PaymentInstrumentId });
+
+                            connection.Close();
+                        }
+
+                        return new CustomerLoyaltyPoint { CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount, CumulativePoints = customerLoyaltyPoint.CumulativePoints, CumulativeFeeAmount = customerLoyaltyPoint.CumulativeFeeAmount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId, IsFrozen = customerLoyaltyPoint.IsFrozen, OrganizationId = customerLoyaltyPoint.OrganizationId, PaymentInstrumentId = customerLoyaltyPoint.PaymentInstrumentId, AvailablePoints = customerLoyaltyPoint.AvailablePoints };
+                    }
+
                 }
+
             }
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
             }
+        }
+
+
+        private CustomerLoyaltyPoint AddPoints(int organizationId, long paymentInstrumentId, long amount, long buyerPoints, long refererPoints, long refererPaymentInstrumentId, int operationType, Customer referer)
+        {
+            TransactionRepository transactionRepository = new TransactionRepository();
+            CustomerRepository customerRepository = new CustomerRepository();
+
+            CustomerLoyaltyPoint customerLoyaltyPoint = null;
+            CustomerLoyaltyPoint refererLoyaltyPoint = null;
+            PaymentInstrument PI = null;
+
+            if (operationType == 1)
+            {
+                //Buyer Loyalty Points
+                //This is the first Level of points addition
+                customerLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(paymentInstrumentId);
+
+                if (customerLoyaltyPoint != null)
+                {
+                    customerLoyaltyPoint.CumulativePoints = customerLoyaltyPoint.CumulativePoints + buyerPoints;
+                    customerLoyaltyPoint.CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount + amount;
+
+                    PI = transactionRepository.GetPaymentInstrumentByCustomerId(customerLoyaltyPoint.CustomerId);
+
+                    PI.LoyaltyPointBalance = PI.LoyaltyPointBalance + buyerPoints;
+                    PI.AccountBalance = PI.AccountBalance + buyerPoints;
+
+                    //Update the Customer Loyalty Point table
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE CustomerLoyaltyPoint SET CumulativePoints=@CumulativePoints, CumulativeTransactionAmount=@CumulativeTransactionAmount WHERE CustomerLoyaltyPointId = @CustomerLoyaltyPointId", new { CumulativePoints = customerLoyaltyPoint.CumulativePoints, CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId });
+
+                        connection.Close();
+                    }
+
+                    //Update the main account 
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE PaymentInstrument SET LoyaltyPointBalance=@LoyaltyPointBalance, AccountBalance=@AccountBalance WHERE PaymentInstrumentId=@PaymentInstrumentId", new { LoyaltyPointBalance = PI.LoyaltyPointBalance, AccountBalance = PI.AccountBalance, PaymentInstrumentId = PI.PaymentInstrumentId });
+
+                        connection.Close();
+                    }
+
+
+                    //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance + buyerPoints;
+                    //customerLoyaltyPoint.PaymentInstrument.AccountBalance = customerLoyaltyPoint.PaymentInstrument.AccountBalance + buyerPoints;
+
+                    //context.SaveChanges();
+                }
+                else
+                {
+                    //customerLoyaltyPoint = context.CustomerLoyaltyPoints.Add(new CustomerLoyaltyPoint { PaymentInstrumentId = paymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = buyerPoints, IsFrozen = false, CumulativeTransactionAmount = amount, OrganizationId = organizationId });
+
+                    //context.SaveChanges();
+
+                    //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
+                    //customerLoyaltyPoint.PaymentInstrument.AccountBalance = buyerPoints;
+                    //context.SaveChanges();
+
+                    //Add fresh points to a fresh customer
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, CumulativeFeeAmount = 0, buyerPoints, IsFrozen = false, amount, organizationId });
+
+                        connection.Close();
+                    }
+
+                    PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(paymentInstrumentId);
+                    PIs.LoyaltyPointBalance = buyerPoints;
+                    PIs.AccountBalance = buyerPoints;
+                    //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
+
+
+                    //Update the main account 
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE PaymentInstrument SET LoyaltyPointBalance=@LoyaltyPointBalance, AccountBalance=@AccountBalance WHERE PaymentInstrumentId=@PaymentInstrumentId", new { LoyaltyPointBalance = PIs.LoyaltyPointBalance, AccountBalance = PIs.AccountBalance, PaymentInstrumentId = PIs.PaymentInstrumentId });
+
+                        connection.Close();
+                    }
+                }
+
+                //Referer Loyalty Points
+                //This is the second level of points addition
+                refererLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(refererPaymentInstrumentId);
+
+                if (refererLoyaltyPoint != null)
+                {
+                    refererLoyaltyPoint.CumulativePoints = refererLoyaltyPoint.CumulativePoints + refererPoints;
+                    refererLoyaltyPoint.CumulativeTransactionAmount = refererLoyaltyPoint.CumulativeTransactionAmount + amount;
+
+
+                    PI = transactionRepository.GetPaymentInstrumentByCustomerId(refererLoyaltyPoint.CustomerId);
+
+                    PI.LoyaltyPointBalance = PI.LoyaltyPointBalance + refererPoints;
+                    PI.AccountBalance = PI.AccountBalance + refererPoints;
+
+                    //   context.SaveChanges();
+
+                    //Update the Customer Loyalty Point table
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE CustomerLoyaltyPoint SET CumulativePoints=@CumulativePoints, CumulativeTransactionAmount=@CumulativeTransactionAmount WHERE CustomerLoyaltyPointId = @CustomerLoyaltyPointId", new { CumulativePoints = refererLoyaltyPoint.CumulativePoints, CumulativeTransactionAmount = refererLoyaltyPoint.CumulativeTransactionAmount, CustomerLoyaltyPointId = refererLoyaltyPoint.CustomerLoyaltyPointId });
+
+                        connection.Close();
+                    }
+
+                    //Update the main account 
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE PaymentInstrument SET LoyaltyPointBalance=@LoyaltyPointBalance, AccountBalance=@AccountBalance WHERE PaymentInstrumentId=@PaymentInstrumentId", new { LoyaltyPointBalance = PI.LoyaltyPointBalance, AccountBalance = PI.AccountBalance, PaymentInstrumentId = PI.PaymentInstrumentId });
+
+                        connection.Close();
+                    }
+                }
+                else
+                {
+                    //refererLoyaltyPoint = context.CustomerLoyaltyPoints.Add(new CustomerLoyaltyPoint { PaymentInstrumentId = paymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = refererPoints, IsFrozen = false, CumulativeTransactionAmount = amount, OrganizationId = organizationId });
+
+                    //context.SaveChanges();
+
+                    //refererLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = refererPoints;
+                    //refererLoyaltyPoint.PaymentInstrument.AccountBalance = refererPoints;
+                    //context.SaveChanges();
+
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, CumulativeFeeAmount = 0, refererPoints, IsFrozen = false, amount, organizationId });
+
+                        connection.Close();
+                    }
+
+                    PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(refererLoyaltyPoint.PaymentInstrumentId);
+                    PIs.LoyaltyPointBalance = refererPoints;
+                    PIs.AccountBalance = refererPoints;
+                    //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
+
+                    //Update the main account 
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE PaymentInstrument SET LoyaltyPointBalance=@LoyaltyPointBalance, AccountBalance=@AccountBalance WHERE PaymentInstrumentId=@PaymentInstrumentId", new { LoyaltyPointBalance = PIs.LoyaltyPointBalance, AccountBalance = PIs.AccountBalance, PaymentInstrumentId = PIs.PaymentInstrumentId });
+
+                        connection.Close();
+                    }
+                }
+
+
+                //Third Level Loyalty Points
+                //This is the third level of points addition
+                CustomerLoyaltyPoint levelOneRefererLoyaltyPoint = null;
+                Customer levelOneReferer = customerRepository.GetCustomerByReferalNo(referer.RefererRefNo);
+
+                if (levelOneReferer != null)
+                {
+                    PaymentInstrument levelOneRefererPI = transactionRepository.GetPaymentInstrumentByCustomerId(levelOneReferer.CustomerId);
+
+                    if (levelOneRefererPI != null)
+                    {
+                        levelOneRefererLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(levelOneRefererPI.PaymentInstrumentId);
+
+                        if (levelOneRefererLoyaltyPoint != null)
+                        {
+                            //levelOneRefererLoyaltyPoint.CumulativePoints = levelOneRefererLoyaltyPoint.CumulativePoints + refererPoints;
+                            //levelOneRefererLoyaltyPoint.CumulativeTransactionAmount = levelOneRefererLoyaltyPoint.CumulativeTransactionAmount + amount;
+
+                            //levelOneRefererLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = levelOneRefererLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance + refererPoints;
+                            //levelOneRefererLoyaltyPoint.PaymentInstrument.AccountBalance = levelOneRefererLoyaltyPoint.PaymentInstrument.AccountBalance + refererPoints;
+
+                            //context.SaveChanges();
+
+
+                            //Update the Customer Loyalty Point table
+                            using (var connection = new SqlConnection(sqlConnectionString))
+                            {
+                                connection.Open();
+                                var affectedRows = connection.Execute("UPDATE CustomerLoyaltyPoint SET CumulativePoints=@CumulativePoints, CumulativeTransactionAmount=@CumulativeTransactionAmount WHERE CustomerLoyaltyPointId = @CustomerLoyaltyPointId", new { CumulativePoints = levelOneRefererLoyaltyPoint.CumulativePoints, CumulativeTransactionAmount = levelOneRefererLoyaltyPoint.CumulativeTransactionAmount, CustomerLoyaltyPointId = levelOneRefererLoyaltyPoint.CustomerLoyaltyPointId });
+
+                                connection.Close();
+                            }
+
+                            //Update the main account 
+                            using (var connection = new SqlConnection(sqlConnectionString))
+                            {
+                                connection.Open();
+                                var affectedRows = connection.Execute("UPDATE PaymentInstrument SET LoyaltyPointBalance=@LoyaltyPointBalance, AccountBalance=@AccountBalance WHERE PaymentInstrumentId=@PaymentInstrumentId", new { LoyaltyPointBalance = levelOneRefererPI.LoyaltyPointBalance, AccountBalance = levelOneRefererPI.AccountBalance, PaymentInstrumentId = levelOneRefererPI.PaymentInstrumentId });
+
+                                connection.Close();
+                            }
+                        }
+                        else
+                        {
+                            //levelOneRefererLoyaltyPoint = context.CustomerLoyaltyPoints.Add(new CustomerLoyaltyPoint { PaymentInstrumentId = paymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = refererPoints, IsFrozen = false, CumulativeTransactionAmount = amount, OrganizationId = organizationId });
+
+                            //context.SaveChanges();
+
+                            //levelOneRefererLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = refererPoints;
+                            //levelOneRefererLoyaltyPoint.PaymentInstrument.AccountBalance = refererPoints;
+                            //context.SaveChanges();
+
+                            using (var connection = new SqlConnection(sqlConnectionString))
+                            {
+                                connection.Open();
+                                var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, CumulativeFeeAmount = 0, refererPoints, IsFrozen = false, amount, organizationId });
+
+                                connection.Close();
+                            }
+
+                            PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(refererLoyaltyPoint.PaymentInstrumentId);
+                            PIs.LoyaltyPointBalance = refererPoints;
+                            PIs.AccountBalance = refererPoints;
+                            //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
+
+                            //Update the main account 
+                            using (var connection = new SqlConnection(sqlConnectionString))
+                            {
+                                connection.Open();
+                                var affectedRows = connection.Execute("UPDATE PaymentInstrument SET LoyaltyPointBalance=@LoyaltyPointBalance, AccountBalance=@AccountBalance WHERE PaymentInstrumentId=@PaymentInstrumentId", new { LoyaltyPointBalance = PIs.LoyaltyPointBalance, AccountBalance = PIs.AccountBalance, PaymentInstrumentId = PIs.PaymentInstrumentId });
+
+                                connection.Close();
+                            }
+                        }
+                    }
+                }
+
+            }
+            else if (operationType == 2)
+            {
+                //Seller Loyalty Points
+                customerLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(paymentInstrumentId);
+
+                if (customerLoyaltyPoint != null)
+                {
+                    customerLoyaltyPoint.CumulativePoints = customerLoyaltyPoint.CumulativePoints + buyerPoints;
+                    customerLoyaltyPoint.CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount + amount;
+
+                    PaymentInstrument sellerPI = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(customerLoyaltyPoint.PaymentInstrumentId);
+
+                    sellerPI.LoyaltyPointBalance = sellerPI.LoyaltyPointBalance + buyerPoints;
+                    sellerPI.AccountBalance = sellerPI.AccountBalance + buyerPoints;
+
+                    //Update the Customer Loyalty Point table
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE CustomerLoyaltyPoint SET CumulativePoints=@CumulativePoints, CumulativeTransactionAmount=@CumulativeTransactionAmount WHERE CustomerLoyaltyPointId = @CustomerLoyaltyPointId", new { CumulativePoints = customerLoyaltyPoint.CumulativePoints, CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId });
+
+                        connection.Close();
+                    }
+
+                    //Update the main account 
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE PaymentInstrument SET LoyaltyPointBalance=@LoyaltyPointBalance, AccountBalance=@AccountBalance WHERE PaymentInstrumentId=@PaymentInstrumentId", new { LoyaltyPointBalance = sellerPI.LoyaltyPointBalance, AccountBalance = sellerPI.AccountBalance, PaymentInstrumentId = sellerPI.PaymentInstrumentId });
+
+                        connection.Close();
+                    }
+                }
+                else
+                {
+                    //customerLoyaltyPoint = context.CustomerLoyaltyPoints.Add(new CustomerLoyaltyPoint { PaymentInstrumentId = paymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = buyerPoints, IsFrozen = false, CumulativeTransactionAmount = amount, OrganizationId = organizationId });
+
+                    //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
+                    //customerLoyaltyPoint.PaymentInstrument.AccountBalance = buyerPoints;
+                    //context.SaveChanges();
+
+
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, CumulativeFeeAmount = 0, buyerPoints, IsFrozen = false, amount, organizationId });
+
+                        connection.Close();
+                    }
+
+                    PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(customerLoyaltyPoint.PaymentInstrumentId);
+                    PIs.LoyaltyPointBalance = buyerPoints;
+                    PIs.AccountBalance = buyerPoints;
+                    //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
+
+                    //Update the main account 
+                    using (var connection = new SqlConnection(sqlConnectionString))
+                    {
+                        connection.Open();
+                        var affectedRows = connection.Execute("UPDATE PaymentInstrument SET LoyaltyPointBalance=@LoyaltyPointBalance, AccountBalance=@AccountBalance WHERE PaymentInstrumentId=@PaymentInstrumentId", new { LoyaltyPointBalance = PIs.LoyaltyPointBalance, AccountBalance = PIs.AccountBalance, PaymentInstrumentId = PIs.PaymentInstrumentId });
+
+                        connection.Close();
+                    }
+                }
+
+               // context.SaveChanges();
+            }
+
+            return customerLoyaltyPoint;
         }
 
 
@@ -429,7 +853,7 @@ namespace Hook.Repository
                 throw new Exception(string.Format("PI0001 - Payment Instrument '{0}' doesn’t exist", destinationPaymentInstrumentId));
             #endregion
 
-            CustomerLoyaltyPoint sourceCustomerLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(organizationId, sourceCustomerId, sourcePaymentInstrumentId);
+            CustomerLoyaltyPoint sourceCustomerLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(sourcePaymentInstrumentId);
 
             if (sourceCustomerLoyaltyPoint == null)
             {

@@ -14,13 +14,9 @@ namespace Hook.Request
     [DataContract]
     public class BuyAirtimeRequest
     {
-        [JsonProperty("organization_id")]
-        public int OrganizationId { get; set; }
-        [JsonProperty("payment_instrument_id")]
-        public long PaymentInstrumentId { get; set; }
         [JsonProperty("amount")]
-        public long Amount { get; set; }
+        public string Amount { get; set; }
         [JsonProperty("msisdn")]
-        public long Msisdn { get; set; }
+        public string Msisdn { get; set; }
     }
 }

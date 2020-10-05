@@ -227,6 +227,7 @@
     <Compile Include="Request\TransactionTypeRequest.cs" />
     <Compile Include="Request\UpdateCustomerRequest.cs" />
     <Compile Include="Request\UserTypeRequest.cs" />
+    <Compile Include="Request\ValidateReferalNoRequest.cs" />
     <Compile Include="Response\CreateCustomerResult.cs" />
     <Compile Include="Response\CustomerDetailsResponse.cs" />
     <Compile Include="Response\CustomerLoginResponse.cs" />

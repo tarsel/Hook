@@ -42,5 +42,7 @@ namespace Hook.Models
         public DateTime? DeactivatedDate { get; set; }
         public DateTime CreatedDate { get; set; }
         public long Msisdn { get; set; }
+        public string RefNo { get; set; }
+        public string RefererRefNo { get; set; }
     }
 }

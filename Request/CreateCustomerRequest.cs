@@ -69,5 +69,10 @@ namespace Hook.Request
         [DataMember(IsRequired = true)]
         [JsonProperty("registered_by_userName")]
         public string RegisteredByUserName { get; set; }
+
+        [Required(ErrorMessage = "referer_ref_no must be provided")]
+        [DataMember(IsRequired = true)]
+        [JsonProperty("referer_ref_no")]
+        public string RefererRefNo { get; set; }
     }
 }

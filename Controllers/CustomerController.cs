@@ -72,15 +72,33 @@ namespace Hook.Controllers
                     return BadRequest(ModelState);
                 }
 
-                CreateCustomerResult createCustomerResult = customerRepository.CreateNewCustomer(request.CustomerTypeId, request.EmailAddress, request.FirstName, request.FullyRegistered, request.IdNumber, request.IdTypeId, request.LanguageId, request.LastName, request.MiddleName, request.RegisteredByUserName, request.IsTestCustomer, request.UserName, request.UserTypeId, long.Parse(request.Msisdn), request.SharedMsisdn);
+                Customer refResult = customerRepository.GetCustomerByReferalNo(request.RefererRefNo);
 
-                return Ok(new CreateCustomerResult
+                if (refResult != null)
                 {
-                    CreatedSuccessfully = createCustomerResult.CreatedSuccessfully,
-                    CustomerId = createCustomerResult.CustomerId,
-                    ResponseError = createCustomerResult.ResponseError,
-                    StatusCode = (int)HttpStatusCode.OK,
-                });
+                    CreateCustomerResult createCustomerResult = customerRepository.CreateNewCustomer(request.CustomerTypeId, request.EmailAddress, request.FirstName, request.FullyRegistered, request.IdNumber, request.IdTypeId, request.LanguageId, request.LastName, request.MiddleName, request.RegisteredByUserName, request.IsTestCustomer, request.UserName, request.UserTypeId, long.Parse(request.Msisdn), request.SharedMsisdn, request.RefererRefNo);
+
+                    return Ok(new CreateCustomerResult
+                    {
+                        CreatedSuccessfully = createCustomerResult.CreatedSuccessfully,
+                        CustomerId = createCustomerResult.CustomerId,
+                        ResponseError = createCustomerResult.ResponseError,
+                        StatusCode = (int)HttpStatusCode.OK,
+                    });
+                }
+                else
+                {
+                    ResponseError responseError = new ResponseError()
+                    {
+                        HasError = true,
+                        ErrorMessage = "Customer Not Created! Referal No. " + request.RefererRefNo + " Does not Exist!"
+                    };
+                    return Ok(new CreateCustomerResult
+                    {
+                        ResponseError = responseError,
+                        CreatedSuccessfully = false
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -407,6 +425,40 @@ namespace Hook.Controllers
                 return Ok(new GenericResponse { IsSuccessful = false, Message = ex.Message, StatusCode = (int)HttpStatusCode.InternalServerError });
             }
         }
+
+        /// <summary>
+        /// Validate Referal Number
+        /// </summary>
+        /// <param name="req"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [ResponseType(typeof(GenericResponse))]
+        public IHttpActionResult ValidateReferalNumber(ValidateReferalNoRequest req)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                Customer result = customerRepository.GetCustomerByReferalNo(req.RefererRefNumber);
+
+                if (result != null)
+                {
+                    return Ok(new GenericResponse { StatusCode = (int)HttpStatusCode.OK, Message = result.RefNo, IsSuccessful = true });
+                }
+                else
+                {
+                    return Ok(new GenericResponse { StatusCode = (int)HttpStatusCode.OK, Message = "", IsSuccessful = false });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Ok(new GenericResponse { Message = ex.Message, StatusCode = (int)HttpStatusCode.InternalServerError, IsSuccessful = false });
+            }
+        }
+
 
     }
 

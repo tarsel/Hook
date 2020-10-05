@@ -29,7 +29,7 @@ namespace Hook.Controllers
         {
             try
             {
-                CustomerLoyaltyPoint dto = transactionRepository.BuyAirtime(request.OrganizationId, request.PaymentInstrumentId, request.Amount, request.Msisdn);
+                CustomerLoyaltyPoint dto = transactionRepository.BuyAirtime(long.Parse(request.Amount), long.Parse(request.Msisdn));
 
                 return Ok(new CustomerLoyaltyPointResponse { CumulativeFeeAmount = dto.CumulativeFeeAmount, CumulativePoints = dto.CumulativePoints, CumulativeTransactionAmount = dto.CumulativeTransactionAmount, CustomerLoyaltyPointId = dto.CustomerLoyaltyPointId, IsFrozen = dto.IsFrozen, Message = "Processed Successfully!", OrganizationId = dto.OrganizationId, PaymentInstrumentId = dto.PaymentInstrumentId, StatusCode = (int)HttpStatusCode.OK });
             }
@@ -37,7 +37,6 @@ namespace Hook.Controllers
             {
                 return Ok(new CustomerLoyaltyPointResponse { Message = ex.Message, StatusCode = (int)HttpStatusCode.InternalServerError });
             }
-
         }
 
         /// <summary>
@@ -51,7 +50,7 @@ namespace Hook.Controllers
         {
             try
             {
-                CustomerLoyaltyPoint dto = transactionRepository.SellAirtime(request.OrganizationId, request.PaymentInstrumentId, request.Amount, request.Msisdn);
+                CustomerLoyaltyPoint dto = transactionRepository.SellAirtime(long.Parse(request.Amount), long.Parse(request.Msisdn));
 
                 return Ok(new CustomerLoyaltyPointResponse { CumulativeFeeAmount = dto.CumulativeFeeAmount, CumulativePoints = dto.CumulativePoints, CumulativeTransactionAmount = dto.CumulativeTransactionAmount, CustomerLoyaltyPointId = dto.CustomerLoyaltyPointId, IsFrozen = dto.IsFrozen, Message = "Processed Successfully!", OrganizationId = dto.OrganizationId, PaymentInstrumentId = dto.PaymentInstrumentId, StatusCode = (int)HttpStatusCode.OK });
             }
@@ -95,7 +94,7 @@ namespace Hook.Controllers
         {
             try
             {
-                CustomerLoyaltyPoint dto = transactionRepository.CheckPointsBalance(request.OrganizationId, request.CustomerId, request.PaymentInstrumentId);
+                CustomerLoyaltyPoint dto = transactionRepository.CheckPointsBalance(request.PaymentInstrumentId);
 
                 return Ok(new CustomerLoyaltyPointResponse { CumulativeFeeAmount = dto.CumulativeFeeAmount, CumulativePoints = dto.CumulativePoints, CumulativeTransactionAmount = dto.CumulativeTransactionAmount, CustomerLoyaltyPointId = dto.CustomerLoyaltyPointId, IsFrozen = dto.IsFrozen, Message = "Processed Successfully!", OrganizationId = dto.OrganizationId, PaymentInstrumentId = dto.PaymentInstrumentId, StatusCode = (int)HttpStatusCode.OK });
             }
@@ -284,9 +283,9 @@ namespace Hook.Controllers
                 return Ok(response);
 
             }
-            catch (Exception )
+            catch (Exception)
             {
-                return Ok(new MinifiedTransactionRecordResponse {  });
+                return Ok(new MinifiedTransactionRecordResponse { });
             }
         }
 

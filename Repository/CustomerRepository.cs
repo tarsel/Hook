@@ -22,7 +22,7 @@ namespace Hook.Repository
         RandomStringGenerator randomStringGenerator = new RandomStringGenerator();
         TransactionRepository transactionRepository = new TransactionRepository();
 
-        public CreateCustomerResult CreateNewCustomer(long customerTypeId, string emailAddress, string firstName, bool fullyRegistered, string idNumber, long idTypeId, long languageId, string lastName, string middleName, string registeredByUsername, bool isTestCustomer, string userName, long userTypeId, long msisdn, bool sharedMsisdn)
+        public CreateCustomerResult CreateNewCustomer(long customerTypeId, string emailAddress, string firstName, bool fullyRegistered, string idNumber, long idTypeId, long languageId, string lastName, string middleName, string registeredByUsername, bool isTestCustomer, string userName, long userTypeId, long msisdn, bool sharedMsisdn, string refererRefNo)
         {
 
             try
@@ -64,7 +64,9 @@ namespace Hook.Repository
                     Salt = randomStringGenerator.NextString(256, true, true, true, true),
                     Msisdn = msisdn,
                     IsStaff = false,
-                    BlacklistReasonId = 1
+                    BlacklistReasonId = 1,
+                    RefNo = "HK" + randomStringGenerator.NextString(5, false, true, true, false),
+                    RefererRefNo = refererRefNo
                 };
 
                 if (userTypeId == (int)UserTypes.Business || userTypeId == (int)UserTypes.Company)
@@ -87,7 +89,7 @@ namespace Hook.Repository
                     using (var connection = new SqlConnection(sqlConnectionString))
                     {
                         connection.Open();
-                        var affectedRows = connection.Execute("Insert into Customer (CustomerTypeId, RegisteredByUsername, UserName, CreatedDate, FirstName, LastName, MiddleName, LanguageId, UserTypeId, FullyRegistered, EmailAddress, InformationModeId, IsBlacklisted, IsTestCustomer, IdNumber, IdTypeId, AccessChannelId, SecurityCode, LoginAttempts, UserLoggedIn, TaxNumber, TermsAccepted, TermsAcceptedDate, DeactivatedAccount, Nonce, Salt, Msisdn,BlacklistReasonId,IsStaff) values (@CustomerTypeId, @RegisteredByUsername, @UserName, @CreatedDate, @FirstName, @LastName, @MiddleName, @LanguageId, @UserTypeId, @FullyRegistered, @EmailAddress, @InformationModeId, @IsBlacklisted, @IsTestCustomer, @IdNumber, @IdTypeId, @AccessChannelId, @SecurityCode, @LoginAttempts, @UserLoggedIn, @TaxNumber, @TermsAccepted, @TermsAcceptedDate, @DeactivatedAccount, @Nonce, @Salt, @Msisdn,@BlacklistReasonId,@IsStaff)", new { currentCustomer.CustomerTypeId, currentCustomer.RegisteredByUsername, currentCustomer.UserName, currentCustomer.CreatedDate, currentCustomer.FirstName, currentCustomer.LastName, currentCustomer.MiddleName, currentCustomer.LanguageId, currentCustomer.UserTypeId, currentCustomer.FullyRegistered, currentCustomer.EmailAddress, currentCustomer.InformationModeId, currentCustomer.IsBlacklisted, currentCustomer.IsTestCustomer, currentCustomer.IdNumber, currentCustomer.IdTypeId, currentCustomer.AccessChannelId, currentCustomer.SecurityCode, currentCustomer.LoginAttempts, currentCustomer.UserLoggedIn, currentCustomer.TaxNumber, currentCustomer.TermsAccepted, currentCustomer.TermsAcceptedDate, currentCustomer.DeactivatedAccount, currentCustomer.Nonce, currentCustomer.Salt, currentCustomer.Msisdn, currentCustomer.BlacklistReasonId, currentCustomer.IsStaff });
+                        var affectedRows = connection.Execute("Insert into Customer (CustomerTypeId, RegisteredByUsername, UserName, CreatedDate, FirstName, LastName, MiddleName, LanguageId, UserTypeId, FullyRegistered, EmailAddress, InformationModeId, IsBlacklisted, IsTestCustomer, IdNumber, IdTypeId, AccessChannelId, SecurityCode, LoginAttempts, UserLoggedIn, TaxNumber, TermsAccepted, TermsAcceptedDate, DeactivatedAccount, Nonce, Salt, Msisdn,BlacklistReasonId,IsStaff,RefNo,RefererRefNo) values (@CustomerTypeId, @RegisteredByUsername, @UserName, @CreatedDate, @FirstName, @LastName, @MiddleName, @LanguageId, @UserTypeId, @FullyRegistered, @EmailAddress, @InformationModeId, @IsBlacklisted, @IsTestCustomer, @IdNumber, @IdTypeId, @AccessChannelId, @SecurityCode, @LoginAttempts, @UserLoggedIn, @TaxNumber, @TermsAccepted, @TermsAcceptedDate, @DeactivatedAccount, @Nonce, @Salt, @Msisdn,@BlacklistReasonId,@IsStaff,@RefNo,@RefererRefNo)", new { currentCustomer.CustomerTypeId, currentCustomer.RegisteredByUsername, currentCustomer.UserName, currentCustomer.CreatedDate, currentCustomer.FirstName, currentCustomer.LastName, currentCustomer.MiddleName, currentCustomer.LanguageId, currentCustomer.UserTypeId, currentCustomer.FullyRegistered, currentCustomer.EmailAddress, currentCustomer.InformationModeId, currentCustomer.IsBlacklisted, currentCustomer.IsTestCustomer, currentCustomer.IdNumber, currentCustomer.IdTypeId, currentCustomer.AccessChannelId, currentCustomer.SecurityCode, currentCustomer.LoginAttempts, currentCustomer.UserLoggedIn, currentCustomer.TaxNumber, currentCustomer.TermsAccepted, currentCustomer.TermsAcceptedDate, currentCustomer.DeactivatedAccount, currentCustomer.Nonce, currentCustomer.Salt, currentCustomer.Msisdn, currentCustomer.BlacklistReasonId, currentCustomer.IsStaff, currentCustomer.RefNo, currentCustomer.RefererRefNo });
 
                         connection.Close();
 
@@ -111,7 +113,7 @@ namespace Hook.Repository
                         using (var connection = new SqlConnection(sqlConnectionString))
                         {
                             connection.Open();
-                            var affectedRows = connection.Execute("Insert into Customer (CustomerTypeId, RegisteredByUsername, UserName, CreatedDate, FirstName, LastName, MiddleName, LanguageId, UserTypeId, FullyRegistered, EmailAddress, InformationModeId, IsBlacklisted, IsTestCustomer, IdNumber, IdTypeId, AccessChannelId,  SecurityCode, LoginAttempts, UserLoggedIn, TaxNumber, TermsAccepted, TermsAcceptedDate, DeactivatedAccount, Nonce, Salt, Msisdn,BlacklistReasonId,IsStaff) values (@CustomerTypeId, @RegisteredByUsername, @UserName, @CreatedDate, @FirstName, @LastName, @MiddleName, @LanguageId, @UserTypeId, @FullyRegistered, @EmailAddress, @InformationModeId, @IsBlacklisted, @IsTestCustomer, @IdNumber, @IdTypeId, @AccessChannelId,  @SecurityCode, @LoginAttempts, @UserLoggedIn, @TaxNumber, @TermsAccepted, @TermsAcceptedDate, @DeactivatedAccount, @Nonce, @Salt, @Msisdn,@BlacklistReasonId,@IsStaff)", new { currentCustomer.CustomerTypeId, currentCustomer.RegisteredByUsername, currentCustomer.UserName, currentCustomer.CreatedDate, currentCustomer.FirstName, currentCustomer.LastName, currentCustomer.MiddleName, currentCustomer.LanguageId, currentCustomer.UserTypeId, currentCustomer.FullyRegistered, currentCustomer.EmailAddress, currentCustomer.InformationModeId, currentCustomer.IsBlacklisted, currentCustomer.IsTestCustomer, currentCustomer.IdNumber, currentCustomer.IdTypeId, currentCustomer.AccessChannelId, currentCustomer.SecurityCode, currentCustomer.LoginAttempts, currentCustomer.UserLoggedIn, currentCustomer.TaxNumber, currentCustomer.TermsAccepted, currentCustomer.TermsAcceptedDate, currentCustomer.DeactivatedAccount, currentCustomer.Nonce, currentCustomer.Salt, currentCustomer.Msisdn, currentCustomer.BlacklistReasonId, currentCustomer.IsStaff });
+                            var affectedRows = connection.Execute("Insert into Customer (CustomerTypeId, RegisteredByUsername, UserName, CreatedDate, FirstName, LastName, MiddleName, LanguageId, UserTypeId, FullyRegistered, EmailAddress, InformationModeId, IsBlacklisted, IsTestCustomer, IdNumber, IdTypeId, AccessChannelId,  SecurityCode, LoginAttempts, UserLoggedIn, TaxNumber, TermsAccepted, TermsAcceptedDate, DeactivatedAccount, Nonce, Salt, Msisdn,BlacklistReasonId,IsStaff,RefNo,RefererRefNo) values (@CustomerTypeId, @RegisteredByUsername, @UserName, @CreatedDate, @FirstName, @LastName, @MiddleName, @LanguageId, @UserTypeId, @FullyRegistered, @EmailAddress, @InformationModeId, @IsBlacklisted, @IsTestCustomer, @IdNumber, @IdTypeId, @AccessChannelId,  @SecurityCode, @LoginAttempts, @UserLoggedIn, @TaxNumber, @TermsAccepted, @TermsAcceptedDate, @DeactivatedAccount, @Nonce, @Salt, @Msisdn,@BlacklistReasonId,@IsStaff,@RefNo,@RefererRefNo)", new { currentCustomer.CustomerTypeId, currentCustomer.RegisteredByUsername, currentCustomer.UserName, currentCustomer.CreatedDate, currentCustomer.FirstName, currentCustomer.LastName, currentCustomer.MiddleName, currentCustomer.LanguageId, currentCustomer.UserTypeId, currentCustomer.FullyRegistered, currentCustomer.EmailAddress, currentCustomer.InformationModeId, currentCustomer.IsBlacklisted, currentCustomer.IsTestCustomer, currentCustomer.IdNumber, currentCustomer.IdTypeId, currentCustomer.AccessChannelId, currentCustomer.SecurityCode, currentCustomer.LoginAttempts, currentCustomer.UserLoggedIn, currentCustomer.TaxNumber, currentCustomer.TermsAccepted, currentCustomer.TermsAcceptedDate, currentCustomer.DeactivatedAccount, currentCustomer.Nonce, currentCustomer.Salt, currentCustomer.Msisdn, currentCustomer.BlacklistReasonId, currentCustomer.IsStaff, currentCustomer.RefNo, currentCustomer.RefererRefNo });
 
                             connection.Close();
 
@@ -197,6 +199,8 @@ namespace Hook.Repository
                     Msisdn = msisdn,
                     SecurityCode = randomStringGenerator.NextString(256, true, true, true, true),
                     IsStaff = true,
+                    RefNo = "HK" + randomStringGenerator.NextString(5, false, true, true, false),
+                    RefererRefNo = ""
 
                 };
 
@@ -204,9 +208,9 @@ namespace Hook.Repository
                 using (var connection = new SqlConnection(sqlConnectionString))
                 {
                     connection.Open();
-                    var affectedRows = connection.Execute("Insert into Customer (CustomerTypeId, RegisteredByUsername, UserName, CreatedDate, FirstName, LastName, MiddleName, LanguageId, UserTypeId, FullyRegistered, EmailAddress, InformationModeId, IsBlacklisted, IsTestCustomer, IdNumber, IdTypeId, AccessChannelId, LoginAttempts, UserLoggedIn, TaxNumber, TermsAccepted, TermsAcceptedDate, DeactivatedAccount, Nonce, Salt, Msisdn, SecurityCode,BlacklistReasonId,IsStaff) values (@CustomerTypeId, @RegisteredByUsername, @UserName, @CreatedDate, @FirstName, @LastName, @MiddleName, @LanguageId, @UserTypeId, @FullyRegistered, @EmailAddress, @InformationModeId, @IsBlacklisted, @IsTestCustomer, @IdNumber, @IdTypeId, @AccessChannelId,  @LoginAttempts, @UserLoggedIn, @TaxNumber, @TermsAccepted, @TermsAcceptedDate, @DeactivatedAccount, @Nonce, @Salt, @Msisdn, @SecurityCode,@BlacklistReasonId,@IsStaff)", new
+                    var affectedRows = connection.Execute("Insert into Customer (CustomerTypeId, RegisteredByUsername, UserName, CreatedDate, FirstName, LastName, MiddleName, LanguageId, UserTypeId, FullyRegistered, EmailAddress, InformationModeId, IsBlacklisted, IsTestCustomer, IdNumber, IdTypeId, AccessChannelId, LoginAttempts, UserLoggedIn, TaxNumber, TermsAccepted, TermsAcceptedDate, DeactivatedAccount, Nonce, Salt, Msisdn, SecurityCode,BlacklistReasonId,IsStaff,RefNo,RefererRefNo) values (@CustomerTypeId, @RegisteredByUsername, @UserName, @CreatedDate, @FirstName, @LastName, @MiddleName, @LanguageId, @UserTypeId, @FullyRegistered, @EmailAddress, @InformationModeId, @IsBlacklisted, @IsTestCustomer, @IdNumber, @IdTypeId, @AccessChannelId,  @LoginAttempts, @UserLoggedIn, @TaxNumber, @TermsAccepted, @TermsAcceptedDate, @DeactivatedAccount, @Nonce, @Salt, @Msisdn, @SecurityCode,@BlacklistReasonId,@IsStaff,@RefNo,@RefererRefNo)", new
 
-                    { customer.CustomerTypeId, customer.RegisteredByUsername, customer.UserName, customer.CreatedDate, customer.FirstName, customer.LastName, customer.MiddleName, customer.LanguageId, customer.UserTypeId, customer.FullyRegistered, customer.EmailAddress, customer.InformationModeId, customer.IsBlacklisted, customer.IsTestCustomer, customer.IdNumber, customer.IdTypeId, customer.AccessChannelId, customer.SecurityCode, customer.LoginAttempts, customer.UserLoggedIn, customer.TaxNumber, customer.TermsAccepted, customer.TermsAcceptedDate, customer.DeactivatedAccount, customer.Nonce, customer.Salt, customer.Msisdn, customer.BlacklistReasonId, customer.IsStaff });
+                    { customer.CustomerTypeId, customer.RegisteredByUsername, customer.UserName, customer.CreatedDate, customer.FirstName, customer.LastName, customer.MiddleName, customer.LanguageId, customer.UserTypeId, customer.FullyRegistered, customer.EmailAddress, customer.InformationModeId, customer.IsBlacklisted, customer.IsTestCustomer, customer.IdNumber, customer.IdTypeId, customer.AccessChannelId, customer.SecurityCode, customer.LoginAttempts, customer.UserLoggedIn, customer.TaxNumber, customer.TermsAccepted, customer.TermsAcceptedDate, customer.DeactivatedAccount, customer.Nonce, customer.Salt, customer.Msisdn, customer.BlacklistReasonId, customer.IsStaff, customer.RefNo, customer.RefererRefNo });
 
                     connection.Close();
                 }
@@ -655,7 +659,17 @@ namespace Hook.Repository
             return dateTime;
         }
 
+        public Customer GetCustomerByReferalNo(string referalNo)
+        {
+            Customer customer = null;
 
+            using (var connection = new SqlConnection(sqlConnectionString))
+            {
+                customer = connection.Query<Customer>("SELECT * FROM Customer WHERE RefNo=@RefNo", new { RefNo = referalNo }).SingleOrDefault();
+            }
+
+            if (customer != null) { return customer; } else { return null; }
+        }
 
         //public bool BlacklistAccount(long customerId, int blacklistReasonId, string blacklistedByUsername, string blacklistDescription)
         //{

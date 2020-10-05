@@ -25,20 +25,24 @@ namespace Hook.Repository
             return true;
         }
 
-        public CustomerLoyaltyPoint BuyAirtime(int organizationId, long paymentInstrumentId, long amount, long msisdn)
+        public CustomerLoyaltyPoint BuyAirtime(long amount, long msisdn)
         {
+            CustomerRepository customerRepository = new CustomerRepository();
+            TransactionRepository transactionRepository = new TransactionRepository();
+
             try
             {
                 if (AirtimePurchase(amount, msisdn) == true)
                 {
-                    // Customer customer = customerRepository.GetCustomerByMsisdn(msisdn);
-                    return loyaltyRepository.CreatePoints(organizationId, paymentInstrumentId, amount);
+                    Customer customer = customerRepository.GetCustomerByMsisdn(msisdn);
+                    PaymentInstrument paymentInstrument = transactionRepository.GetPaymentInstrumentByCustomerId(customer.CustomerId);
+
+                    return loyaltyRepository.CreatePoints(1, paymentInstrument.PaymentInstrumentId, amount, customer.RefererRefNo, 1, customer.CustomerId, msisdn);
                 }
                 else
                 {
                     return null;
                 }
-
             }
             catch (Exception ex)
             {
@@ -46,13 +50,18 @@ namespace Hook.Repository
             }
         }
 
-        public CustomerLoyaltyPoint SellAirtime(int organizationId, long paymentInstrumentId, long amount, long msisdn)
+        public CustomerLoyaltyPoint SellAirtime(long amount, long msisdn)
         {
+            CustomerRepository customerRepository = new CustomerRepository();
+            TransactionRepository transactionRepository = new TransactionRepository();
             try
             {
                 if (AirtimePurchase(amount, msisdn) == true)
                 {
-                    return loyaltyRepository.CreatePoints(organizationId, paymentInstrumentId, amount);
+                    Customer customer = customerRepository.GetCustomerByMsisdn(msisdn);
+                    PaymentInstrument paymentInstrument = transactionRepository.GetPaymentInstrumentByCustomerId(customer.CustomerId);
+
+                    return loyaltyRepository.CreatePoints(1, paymentInstrument.PaymentInstrumentId, amount, customer.RefererRefNo, 2, customer.CustomerId, msisdn);
                 }
                 else
                 {
@@ -78,11 +87,11 @@ namespace Hook.Repository
             }
         }
 
-        public CustomerLoyaltyPoint CheckPointsBalance(int organizationId, long customerId, long paymentInstrumentId)
+        public CustomerLoyaltyPoint CheckPointsBalance(long paymentInstrumentId)
         {
             try
             {
-                return loyaltyRepository.GetCustomerLoyaltyPointsByPaymentInstrument(organizationId, customerId, paymentInstrumentId);
+                return loyaltyRepository.GetCustomerLoyaltyPointsByPaymentInstrument(paymentInstrumentId);
 
             }
             catch (Exception ex)

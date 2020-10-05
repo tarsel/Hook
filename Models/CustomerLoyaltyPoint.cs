@@ -15,5 +15,6 @@ namespace Hook.Models
         public int OrganizationId { get; set; }
         public long PaymentInstrumentId { get; set; }
         public long CustomerId { get; set; }
+        public long AvailablePoints { get; set; }
     }
 }
