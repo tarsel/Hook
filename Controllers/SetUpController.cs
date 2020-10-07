@@ -31,7 +31,7 @@ namespace Hook.Controllers
                     return BadRequest(ModelState);
                 }
 
-                int result = setUpRepository.CreateCustomerType(request.CustomerTypeName, request.CustomerTypeDescription, request.CreatedBy);
+                int result = setUpRepository.CreateCustomerType(request.CustomerTypeName, request.CustomerTypeDescription);
 
                 if (result > 0)
                 {
@@ -99,7 +99,7 @@ namespace Hook.Controllers
                     return BadRequest(ModelState);
                 }
 
-                int result = setUpRepository.CreateIDType(request.IdTypeName, request.IdTypeDescription, request.CreatedBy);
+                int result = setUpRepository.CreateIDType(request.IdTypeName, request.IdTypeDescription);
 
                 if (result > 0)
                 {
@@ -117,73 +117,6 @@ namespace Hook.Controllers
             }
         }
 
-        /// <summary>
-        /// Create Sub County
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        [HttpPost]
-        [ResponseType(typeof(GenericResponse))]
-        public IHttpActionResult CreateSubCounty(SubCountyRequest request)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                int result = setUpRepository.CreateSubCounty(request.SubCountyName, request.SubCountyDescription, request.CreatedBy);
-
-                if (result > 0)
-                {
-                    return Ok(new GenericResponse { IsSuccessful = true, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-                else
-                {
-                    return Ok(new GenericResponse { IsSuccessful = false, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-
-            }
-            catch (Exception ex)
-            {
-                return Ok(new GenericResponse { IsSuccessful = false, Message = ex.Message, StatusCode = (int)HttpStatusCode.InternalServerError });
-            }
-        }
-
-        /// <summary>
-        /// Create Town
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        [HttpPost]
-        [ResponseType(typeof(GenericResponse))]
-        public IHttpActionResult CreateTown(TownRequest request)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                int result = setUpRepository.CreateTown(request.TownName, request.TownDescription, request.SubCountyId, request.CreatedBy);
-
-                if (result > 0)
-                {
-                    return Ok(new GenericResponse { IsSuccessful = true, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-                else
-                {
-                    return Ok(new GenericResponse { IsSuccessful = false, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-
-            }
-            catch (Exception ex)
-            {
-                return Ok(new GenericResponse { IsSuccessful = false, Message = ex.Message, StatusCode = (int)HttpStatusCode.InternalServerError });
-            }
-        }
 
         /// <summary>
         /// Get All Customer Types
@@ -295,81 +228,6 @@ namespace Hook.Controllers
             }
         }
 
-        /// <summary>
-        /// Get All SubCounties
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [ResponseType(typeof(List<SubCountyResponse>))]
-        public IHttpActionResult GetAllSubCounties()
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                List<SubCountyResponse> response = new List<SubCountyResponse>();
-
-                List<SubCounty> cust = setUpRepository.GetAllSubCounties();
-
-                foreach (var item in cust)
-                {
-                    response.Add(new SubCountyResponse { IsSuccessful = true, CreatedBy = item.CreatedBy, DateCreated = item.DateCreated, DateUpdated = item.DateUpdated, SubCountyDescription = item.SubCountyDescription, SubCountyId = item.SubCountyId, SubCountyName = item.SubCountyName, UpdatedBy = item.UpdatedBy, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-
-                return Ok(response);
-
-            }
-            catch (Exception ex)
-            {
-                return Ok(new SubCountyResponse
-                {
-                    StatusCode = (int)HttpStatusCode.InternalServerError,
-                    Message = ex.Message,
-                    IsSuccessful = false
-                });
-            }
-        }
-
-        /// <summary>
-        /// Get All Towns
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
-        [ResponseType(typeof(List<TownResponse>))]
-        public IHttpActionResult GetAllTowns()
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                List<TownResponse> response = new List<TownResponse>();
-
-                List<Town> cust = setUpRepository.GetAllTowns();
-
-                foreach (var item in cust)
-                {
-                    response.Add(new TownResponse { TownId = item.TownId, UpdatedBy = item.UpdatedBy, SubCountyId = item.SubCountyId, DateUpdated = item.DateUpdated, CreatedBy = item.CreatedBy, DateCreated = item.DateCreated, IsSuccessful = true, TownDescription = item.TownDescription, TownName = item.TownName, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-
-                return Ok(response);
-
-            }
-            catch (Exception ex)
-            {
-                return Ok(new TownResponse
-                {
-                    StatusCode = (int)HttpStatusCode.InternalServerError,
-                    Message = ex.Message,
-                    IsSuccessful = false
-                });
-            }
-        }
 
         /// <summary>
         /// Update Customer Type
@@ -387,7 +245,7 @@ namespace Hook.Controllers
                     return BadRequest(ModelState);
                 }
 
-                int result = setUpRepository.UpdateCustomerType(request.CustomerTypeId, request.CustomerTypeName, request.CustomerTypeDescription, request.UpdatedBy);
+                int result = setUpRepository.UpdateCustomerType(request.CustomerTypeId, request.CustomerTypeName, request.CustomerTypeDescription);
 
                 if (result > 0)
                 {
@@ -421,7 +279,7 @@ namespace Hook.Controllers
                     return BadRequest(ModelState);
                 }
 
-                int result = setUpRepository.UpdateUserType(request.UserTypeId, request.UserTypeName, request.UserTypeDescription, request.UpdatedBy);
+                int result = setUpRepository.UpdateUserType(request.UserTypeId, request.UserTypeName, request.UserTypeDescription);
 
                 if (result > 0)
                 {
@@ -455,7 +313,7 @@ namespace Hook.Controllers
                     return BadRequest(ModelState);
                 }
 
-                int result = setUpRepository.UpdateIDType(request.IdTypeId, request.IdTypeName, request.IdTypeDescription, request.UpdatedBy);
+                int result = setUpRepository.UpdateIDType(request.IdTypeId, request.IdTypeName, request.IdTypeDescription);
 
                 if (result > 0)
                 {
@@ -470,180 +328,6 @@ namespace Hook.Controllers
             catch (Exception ex)
             {
                 return Ok(new GenericResponse { IsSuccessful = false, Message = ex.Message, StatusCode = (int)HttpStatusCode.InternalServerError });
-            }
-        }
-
-        /// <summary>
-        /// Update Sub County
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        [HttpPost]
-        [ResponseType(typeof(GenericResponse))]
-        public IHttpActionResult UpdateSubCounty(SubCountyRequest request)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                int result = setUpRepository.UpdateSubCounty(request.SubCountyId, request.SubCountyName, request.SubCountyDescription, request.UpdatedBy);
-
-                if (result > 0)
-                {
-                    return Ok(new GenericResponse { IsSuccessful = true, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-                else
-                {
-                    return Ok(new GenericResponse { IsSuccessful = false, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-
-            }
-            catch (Exception ex)
-            {
-                return Ok(new GenericResponse { IsSuccessful = false, Message = ex.Message, StatusCode = (int)HttpStatusCode.InternalServerError });
-            }
-        }
-
-        /// <summary>
-        /// Update Town
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        [HttpPost]
-        [ResponseType(typeof(GenericResponse))]
-        public IHttpActionResult UpdateTown(TownRequest request)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                int result = setUpRepository.UpdateTown(request.TownId, request.TownName, request.TownDescription, request.SubCountyId, request.UpdatedBy);
-
-                if (result > 0)
-                {
-                    return Ok(new GenericResponse { IsSuccessful = true, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-                else
-                {
-                    return Ok(new GenericResponse { IsSuccessful = false, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-
-            }
-            catch (Exception ex)
-            {
-                return Ok(new GenericResponse { IsSuccessful = false, Message = ex.Message, StatusCode = (int)HttpStatusCode.InternalServerError });
-            }
-        }
-
-        /// <summary>
-        /// Get Towns By Sub County Id
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        [HttpPost]
-        [ResponseType(typeof(List<TownResponse>))]
-        public IHttpActionResult GetTownsBySubCountyId(GenericRequest request)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                List<TownResponse> response = new List<TownResponse>();
-
-                List<Town> cust = setUpRepository.GetTownsBySubCountyId(request.SubCountyId);
-
-                foreach (var item in cust)
-                {
-                    response.Add(new TownResponse { TownId = item.TownId, UpdatedBy = item.UpdatedBy, SubCountyId = item.SubCountyId, DateUpdated = item.DateUpdated, CreatedBy = item.CreatedBy, DateCreated = item.DateCreated, IsSuccessful = true, TownDescription = item.TownDescription, TownName = item.TownName, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK });
-                }
-
-                return Ok(response);
-
-            }
-            catch (Exception ex)
-            {
-                return Ok(new TownResponse
-                {
-                    StatusCode = (int)HttpStatusCode.InternalServerError,
-                    Message = ex.Message,
-                    IsSuccessful = false
-                });
-            }
-        }
-
-        /// <summary>
-        /// Get Town By Town Id
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        [HttpPost]
-        [ResponseType(typeof(TownResponse))]
-        public IHttpActionResult GetTownByTownId(GenericRequest request)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                Town cust = setUpRepository.GetTownByTownId(request.TownId);
-
-                TownResponse response = new TownResponse { TownId = cust.TownId, UpdatedBy = cust.UpdatedBy, SubCountyId = cust.SubCountyId, DateUpdated = cust.DateUpdated, CreatedBy = cust.CreatedBy, DateCreated = cust.DateCreated, IsSuccessful = true, TownDescription = cust.TownDescription, TownName = cust.TownName, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK };
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return Ok(new TownResponse
-                {
-                    StatusCode = (int)HttpStatusCode.InternalServerError,
-                    Message = ex.Message,
-                    IsSuccessful = false
-                });
-            }
-        }
-
-        /// <summary>
-        /// Get Sub County By Sub County Id
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        [HttpPost]
-        [ResponseType(typeof(SubCountyResponse))]
-        public IHttpActionResult GetSubCountyBySubCountyId(GenericRequest request)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                SubCounty cust = setUpRepository.GetSubCountyBySubCountyId(request.SubCountyId);
-
-                SubCountyResponse response = new SubCountyResponse { IsSuccessful = true, CreatedBy = cust.CreatedBy, DateCreated = cust.DateCreated, DateUpdated = cust.DateUpdated, SubCountyDescription = cust.SubCountyDescription, SubCountyId = cust.SubCountyId, SubCountyName = cust.SubCountyName, UpdatedBy = cust.UpdatedBy, Message = "Processed Successfully!", StatusCode = (int)HttpStatusCode.OK };
-
-                return Ok(response);
-
-            }
-            catch (Exception ex)
-            {
-                return Ok(new SubCountyResponse
-                {
-                    StatusCode = (int)HttpStatusCode.InternalServerError,
-                    Message = ex.Message,
-                    IsSuccessful = false
-                });
             }
         }
 

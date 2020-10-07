@@ -13,15 +13,15 @@ namespace Hook.Repository
 {
     public class SetUpRepository
     {
-         string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
+        string sqlConnectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString.ToString();
 
-        public int CreateCustomerType(string customerTypeName, string customerTypeDescription, string createdBy)
+        public int CreateCustomerType(string customerTypeName, string customerTypeDescription)
         {
             using (var connection = new SqlConnection(sqlConnectionString))
             {
                 connection.Open();
 
-                var affectedRows = connection.Execute("Insert into CustomerType (CustomerTypeName,CustomerTypeDescription, CreatedBy, CreatedDate) values (@CustomerTypeName, @CustomerTypeDescription, @CreatedBy, @CreatedDate)", new { customerTypeName, customerTypeDescription, createdBy, CreatedDate = GetRealDate() });
+                var affectedRows = connection.Execute("Insert into CustomerType (CustomerTypeName,CustomerTypeDescription) values (@CustomerTypeName, @CustomerTypeDescription)", new { customerTypeName, customerTypeDescription });
 
                 connection.Close();
 
@@ -29,12 +29,12 @@ namespace Hook.Repository
             }
         }
 
-        public int UpdateCustomerType(long customerTypeId, string customerTypeName, string customerTypeDescription, string updatedBy)
+        public int UpdateCustomerType(long customerTypeId, string customerTypeName, string customerTypeDescription)
         {
             using (var connection = new SqlConnection(sqlConnectionString))
             {
                 connection.Open();
-                var affectedRows = connection.Execute("UPDATE CustomerType SET CustomerTypeName=@CustomerTypeName,CustomerTypeDescription=@CustomerTypeDescription, UpdatedBy=@UpdatedBy, UpdatedDate=@UpdatedDate WHERE CustomerTypeId=@CustomerTypeId", new { CustomerTypeId = customerTypeId, CustomerTypeName = customerTypeName, CustomerTypeDescription = customerTypeDescription, UpdatedBy = updatedBy, UpdatedDate = GetRealDate() });
+                var affectedRows = connection.Execute("UPDATE CustomerType SET CustomerTypeName=@CustomerTypeName,CustomerTypeDescription=@CustomerTypeDescription WHERE CustomerTypeId=@CustomerTypeId", new { CustomerTypeId = customerTypeId, CustomerTypeName = customerTypeName, CustomerTypeDescription = customerTypeDescription });
 
                 connection.Close();
 
@@ -64,13 +64,14 @@ namespace Hook.Repository
             return customerTypes;
         }
 
-        public int CreateTown(string townName, string townDescription, long subCountyId, string createdBy)
+        public int CreateIDType(string idTypeName, string idTypeDescription)
         {
+
             using (var connection = new SqlConnection(sqlConnectionString))
             {
                 connection.Open();
 
-                var affectedRows = connection.Execute("Insert into Town (TownName, TownDescription, SubCountyId, CreatedBy, CreatedDate) values (@TownName, @TownDescription, @SubCountyId, @CreatedBy, @CreatedDate)", new { townName, townDescription, subCountyId, createdBy, CreatedDate = GetRealDate() });
+                var affectedRows = connection.Execute("Insert into IdType (IdTypeName, IdTypeDescription) values (@IdTypeName, @IdTypeDescription)", new { idTypeName, idTypeDescription });
 
                 connection.Close();
 
@@ -78,123 +79,13 @@ namespace Hook.Repository
             }
         }
 
-        public int UpdateTown(long townId, string townName, string townDescription, long subCountyId, string updatedBy)
-        {
-            using (var connection = new SqlConnection(sqlConnectionString))
-            {
-                connection.Open();
-                var affectedRows = connection.Execute("UPDATE Town SET TownName=@TownName,TownDescription=@TownDescription, SubCountyId=@SubCountyId, UpdatedBy=@UpdatedBy, UpdatedDate=@UpdatedDate WHERE TownId=@TownId", new { TownId = townId, TownName = townName, TownDescription = townDescription, SubCountyId = subCountyId, UpdatedBy = updatedBy, UpdatedDate = GetRealDate() });
-
-                connection.Close();
-
-                return affectedRows;
-            }
-        }
-
-        public Town GetTownByTownId(long townId)
-        {
-            using (var connection = new SqlConnection(sqlConnectionString))
-            {
-                return connection.Query<Town>("SELECT * FROM Town WHERE TownId=@TownId", new { TownId = townId }).SingleOrDefault();
-            }
-        }
-
-
-        public List<Town> GetTownsBySubCountyId(long subCountyId)
-        {
-            using (var connection = new SqlConnection(sqlConnectionString))
-            {
-                return connection.Query<Town>("SELECT * FROM Town WHERE SubCountyId=@SubCountyId", new { SubCountyId = subCountyId }).ToList();
-            }
-        }
-
-        public List<Town> GetAllTowns()
-        {
-            List<Town> towns = new List<Town>();
-
-            using (var connection = new SqlConnection(sqlConnectionString))
-            {
-                connection.Open();
-                towns = connection.Query<Town>("Select * FROM Town").ToList();
-
-                connection.Close();
-            }
-
-            return towns;
-        }
-
-
-        public int CreateSubCounty(string subCountyName, string subCountyDescription, string createdBy)
-        {
-            using (var connection = new SqlConnection(sqlConnectionString))
-            {
-                connection.Open();
-
-                var affectedRows = connection.Execute("Insert into SubCounty (SubCountyName, SubCountyDescription, CreatedBy, CreatedDate) values (@SubCountyName, @SubCountyDescription, @CreatedBy, @CreatedDate)", new { subCountyName, subCountyDescription, createdBy, CreatedDate = GetRealDate() });
-
-                connection.Close();
-
-                return affectedRows;
-            }
-        }
-
-        public int UpdateSubCounty(long subCountyId, string subCountyName, string subCountyDescription, string updatedBy)
-        {
-            using (var connection = new SqlConnection(sqlConnectionString))
-            {
-                connection.Open();
-                var affectedRows = connection.Execute("UPDATE SubCounty SET SubCountyName=@SubCountyName,SubCountyDescription=@SubCountyDescription, UpdatedBy=@UpdatedBy, UpdatedDate=@UpdatedDate WHERE SubCountyId=@SubCountyId", new { SubCountyId = subCountyId, SubCountyName = subCountyName, SubCountyDescription = subCountyDescription, UpdatedBy = updatedBy, UpdatedDate = GetRealDate() });
-
-                connection.Close();
-
-                return affectedRows;
-            }
-        }
-
-        public SubCounty GetSubCountyBySubCountyId(long subCountyId)
-        {
-            using (var connection = new SqlConnection(sqlConnectionString))
-            {
-                return connection.Query<SubCounty>("SELECT * FROM SubCounty WHERE SubCountyId=@SubCountyId", new { SubCountyId = subCountyId }).SingleOrDefault();
-            }
-        }
-
-        public List<SubCounty> GetAllSubCounties()
-        {
-            List<SubCounty> subCounties = new List<SubCounty>();
-            using (var connection = new SqlConnection(sqlConnectionString))
-            {
-                connection.Open();
-                subCounties = connection.Query<SubCounty>("Select * FROM SubCounty").ToList();
-
-                connection.Close();
-            }
-            return subCounties;
-        }
-
-
-        public int CreateIDType(string idTypeName, string idTypeDescription, string createdBy)
+        public int UpdateIDType(long idTypeId, string idTypeName, string idTypeDescription)
         {
 
             using (var connection = new SqlConnection(sqlConnectionString))
             {
                 connection.Open();
-
-                var affectedRows = connection.Execute("Insert into IdType (IdTypeName, IdTypeDescription, CreatedBy, CreatedDate) values (@IdTypeName, @IdTypeDescription, @CreatedBy, @CreatedDate)", new { idTypeName, idTypeDescription, createdBy, CreatedDate = GetRealDate() });
-
-                connection.Close();
-
-                return affectedRows;
-            }
-        }
-
-        public int UpdateIDType(long idTypeId, string idTypeName, string idTypeDescription, string updatedBy)
-        {
-
-            using (var connection = new SqlConnection(sqlConnectionString))
-            {
-                connection.Open();
-                var affectedRows = connection.Execute("UPDATE IdType SET IdTypeName=@IdTypeName,IdTypeDescription=@IdTypeName, UpdatedBy=@UpdatedBy, UpdatedDate=@UpdatedDate WHERE IdTypeId=@IdTypeId", new { IdTypeId = idTypeId, IdTypeName = idTypeName, IdTypeDescription = idTypeDescription, UpdatedBy = updatedBy, UpdatedDate = GetRealDate() });
+                var affectedRows = connection.Execute("UPDATE IdType SET IdTypeName=@IdTypeName,IdTypeDescription=@IdTypeDescription WHERE IdTypeId=@IdTypeId", new { IdTypeId = idTypeId, IdTypeName = idTypeName, IdTypeDescription = idTypeDescription });
 
                 connection.Close();
 
@@ -232,7 +123,7 @@ namespace Hook.Repository
             {
                 connection.Open();
 
-                var affectedRows = connection.Execute("Insert into UserType (UserTypeName, UserTypeDescription, CreatedBy, CreatedDate) values (@UserTypeName, @UserTypeDescription, @CreatedBy, @CreatedDate)", new { userTypeName, userTypeDescription, createdBy, CreatedDate = GetRealDate() });
+                var affectedRows = connection.Execute("Insert into UserType (UserTypeName, UserTypeDescription) values (@UserTypeName, @UserTypeDescription)", new { userTypeName, userTypeDescription });
 
                 connection.Close();
 
@@ -240,12 +131,12 @@ namespace Hook.Repository
             }
         }
 
-        public int UpdateUserType(long userTypeId, string userTypeName, string userTypeDescription, string updatedBy)
+        public int UpdateUserType(long userTypeId, string userTypeName, string userTypeDescription)
         {
             using (var connection = new SqlConnection(sqlConnectionString))
             {
                 connection.Open();
-                var affectedRows = connection.Execute("UPDATE UserType SET UserTypeName=@UserTypeName,UserTypeDescription=@UserTypeDescription, UpdatedBy=@UpdatedBy, UpdatedDate=@UpdatedDate WHERE UserTypeId=@UserTypeId", new { UserTypeId = userTypeId, UserTypeName = userTypeName, UserTypeDescription = userTypeDescription, UpdatedBy = updatedBy, UpdatedDate = GetRealDate() });
+                var affectedRows = connection.Execute("UPDATE UserType SET UserTypeName=@UserTypeName,UserTypeDescription=@UserTypeDescription WHERE UserTypeId=@UserTypeId", new { UserTypeId = userTypeId, UserTypeName = userTypeName, UserTypeDescription = userTypeDescription });
 
                 connection.Close();
 

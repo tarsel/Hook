@@ -18,13 +18,5 @@ namespace Hook.Request
         public string CustomerTypeName { get; set; }
         [JsonProperty("customer_type_description")]
         public string CustomerTypeDescription { get; set; }
-        [JsonProperty("date_created")]
-        public DateTime DateCreated { get; set; }
-        [JsonProperty("created_by")]
-        public string CreatedBy { get; set; }
-        [JsonProperty("date_updated")]
-        public DateTime DateUpdated { get; set; }
-        [JsonProperty("updated_by")]
-        public string UpdatedBy { get; set; }
     }
 }
