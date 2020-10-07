@@ -43,6 +43,7 @@ namespace Hook.Repository
                 {
                     return null;
                 }
+
             }
             catch (Exception ex)
             {
@@ -174,66 +175,68 @@ namespace Hook.Repository
             {
                 PaymentInstrument payerPi = GetPaymentInstrumentByCustomerId(customerId);
 
-                if (payerPi.AccountBalance < transactionAmount)
+                //if (payerPi.AccountBalance < transactionAmount)
+                //{
+                //    throw new Exception("Sorry! You do not have sufficient Balance to make this transaction");
+                //}
+                //else
+                //{
+                Customer payeeCustomer = new CustomerRepository().GetCustomerByUsername("system");
+
+                PaymentInstrument payeePi = GetPaymentInstrumentByCustomerId(payeeCustomer.CustomerId);
+
+                MasterTransactionRecord newTransaction = new MasterTransactionRecord
                 {
-                    throw new Exception("Sorry! You do not have sufficient Balance to make this transaction");
-                }
-                else
+                    TransactionTypeId = transactionTypeId,
+                    PayerId = customerId,
+                    PayeeId = payeeCustomer.CustomerId,
+                    PayerPaymentInstrumentId = payerPi.PaymentInstrumentId,
+                    PayeePaymentInstrumentId = payeePi.PaymentInstrumentId,
+                    AccessChannelId = 1,
+                    Amount = transactionAmount,
+                    Fee = transactionAmount,//Should be the amount payable to the vendor
+                    CustomerTypeId = customerTypeId,
+                    Tax = 0,
+                    TransactionErrorCodeId = 1,
+                    IsTestTransaction = false,
+                    TransactionDate = GetRealDate(),
+                    TransactionReference = "HK" + randomStringGenerator.NextTokenString(7, true, true, true, false),
+                    PayerBalanceBeforeTransaction = payerPi.AccountBalance,
+                    PayeeBalanceBeforeTransaction = payeePi.AccountBalance,
+                    TransactionStatusId = TransactionState.Successful,
+                    PayeeBalanceAfterTransaction = (payeePi.AccountBalance + transactionAmount),
+                    PayerBalanceAfterTransaction = (payerPi.AccountBalance - transactionAmount),
+                    ReversedTransactionOriginalTypeId = 1,
+                    ShortDescription = "Airtime Purchase",
+
+                };
+
+                using (var connection = new SqlConnection(sqlConnectionString))
                 {
-                    Customer payeeCustomer = new CustomerRepository().GetCustomerByUsername("walletuser");
+                    connection.Open();
 
-                    PaymentInstrument payeePi = GetPaymentInstrumentByCustomerId(payeeCustomer.CustomerId);
+                    var affectedRows = connection.Execute("INSERT INTO MasterTransactionRecord (PayerId, PayerPaymentInstrumentId, PayeeId, PayeePaymentInstrumentId, TransactionReference, TransactionTypeId, Amount, Fee, Tax, TransactionDate, CustomerTypeId, PayerBalanceBeforeTransaction, PayerBalanceAfterTransaction, PayeeBalanceBeforeTransaction, PayeeBalanceAfterTransaction, IsTestTransaction, AccessChannelId, SourceUserName, DestinationUserName, TransactionStatusId, ThirdPartyTransactionId,  ReversedTransactionOriginalTypeId,ShortDescription) VALUES (@PayerId, @PayerPaymentInstrumentId, @PayeeId, @PayeePaymentInstrumentId, @TransactionReference, @TransactionTypeId, @Amount, @Fee, @Tax, @TransactionDate, @CustomerTypeId, @PayerBalanceBeforeTransaction, @PayerBalanceAfterTransaction, @PayeeBalanceBeforeTransaction, @PayeeBalanceAfterTransaction, @IsTestTransaction, @AccessChannelId, @SourceUserName, @DestinationUserName, @TransactionStatusId,@ThirdPartyTransactionId,@ReversedTransactionOriginalTypeId,@ShortDescription)", new { newTransaction.PayerId, newTransaction.PayerPaymentInstrumentId, newTransaction.PayeeId, newTransaction.PayeePaymentInstrumentId, newTransaction.TransactionReference, newTransaction.TransactionTypeId, newTransaction.TransactionErrorCodeId, newTransaction.Amount, newTransaction.Fee, newTransaction.Tax, newTransaction.TransactionDate, newTransaction.CustomerTypeId, newTransaction.PayerBalanceBeforeTransaction, newTransaction.PayerBalanceAfterTransaction, newTransaction.PayeeBalanceBeforeTransaction, newTransaction.PayeeBalanceAfterTransaction, newTransaction.IsTestTransaction, newTransaction.AccessChannelId, newTransaction.SourceUserName, newTransaction.DestinationUserName, newTransaction.TransactionStatusId, newTransaction.ThirdPartyTransactionId, newTransaction.ReversedTransactionOriginalTypeId, newTransaction.ReversedTransactionOriginalTypeId.Value, newTransaction.ShortDescription });
 
-                    MasterTransactionRecord newTransaction = new MasterTransactionRecord
+                    connection.Close();
+
+                    if (affectedRows == 1)
                     {
-                        TransactionTypeId = transactionTypeId,
-                        PayerId = customerId,
-                        PayeeId = payeeCustomer.CustomerId,
-                        PayerPaymentInstrumentId = payerPi.PaymentInstrumentId,
-                        PayeePaymentInstrumentId = payeePi.PaymentInstrumentId,
-                        AccessChannelId = 1,
-                        Amount = transactionAmount,
-                        Fee = transactionAmount,//Should be the amount payable to the vendor
-                        CustomerTypeId = customerTypeId,
-                        Tax = 0,
-                        TransactionErrorCodeId = 1,
-                        IsTestTransaction = false,
-                        TransactionDate = GetRealDate(),
-                        TransactionReference = "HK" + randomStringGenerator.NextTokenString(7, true, true, true, false),
-                        PayerBalanceBeforeTransaction = payerPi.AccountBalance,
-                        PayeeBalanceBeforeTransaction = payeePi.AccountBalance,
-                        TransactionStatusId = TransactionState.Successful,
-                        PayeeBalanceAfterTransaction = (payeePi.AccountBalance + transactionAmount),
-                        PayerBalanceAfterTransaction = (payerPi.AccountBalance - transactionAmount),
-                        ReversedTransactionOriginalTypeId = 1,
-                    };
+                        PaymentInstrument updatePayerNewBal = UpdatePaymentInstrument(newTransaction.PayerBalanceAfterTransaction.Value, payerPi.CustomerId);
+                        PaymentInstrument updatePayeeNewBal = UpdatePaymentInstrument(newTransaction.PayeeBalanceAfterTransaction.Value, payeePi.CustomerId);
 
-                    using (var connection = new SqlConnection(sqlConnectionString))
-                    {
-                        connection.Open();
+                      //  TransactionTypeCategory type = GetTransactionTypeCategoryByTransactionTypeId(transactionTypeId).FirstOrDefault();
 
-                        var affectedRows = connection.Execute("INSERT INTO MasterTransactionRecord (PayerId, PayerPaymentInstrumentId, PayeeId, PayeePaymentInstrumentId, TransactionReference, TransactionTypeId, TransactionErrorCodeId, AmountPaid, Fee, Tax, TransactionDate, CustomerTypeId, PayerBalanceBeforeTransaction, PayerBalanceAfterTransaction, PayeeBalanceBeforeTransaction, PayeeBalanceAfterTransaction, IsTestTransaction, AccessChannelId, SourceUserName, DestinationUserName, TransactionStatusId, ThirdPartyTransactionId,  TransactionTypeCategoryId,ReversedTransactionOriginalTypeId,KeyIdentifier,TownId,SubcountyId,IdNumber, ZoneId) VALUES (@PayerId, @PayerPaymentInstrumentId, @PayeeId, @PayeePaymentInstrumentId, @TransactionReference, @TransactionTypeId, @TransactionErrorCodeId, @AmountPaid, @Fee, @Tax, @TransactionDate, @CustomerTypeId, @PayerBalanceBeforeTransaction, @PayerBalanceAfterTransaction, @PayeeBalanceBeforeTransaction, @PayeeBalanceAfterTransaction, @IsTestTransaction, @AccessChannelId, @SourceUserName, @DestinationUserName, @TransactionStatusId,@ThirdPartyTransactionId,@ReversedTransactionOriginalTypeId)", new { newTransaction.PayerId, newTransaction.PayerPaymentInstrumentId, newTransaction.PayeeId, newTransaction.PayeePaymentInstrumentId, newTransaction.TransactionReference, newTransaction.TransactionTypeId, newTransaction.TransactionErrorCodeId, newTransaction.Amount, newTransaction.Fee, newTransaction.Tax, newTransaction.TransactionDate, newTransaction.CustomerTypeId, newTransaction.PayerBalanceBeforeTransaction, newTransaction.PayerBalanceAfterTransaction, newTransaction.PayeeBalanceBeforeTransaction, newTransaction.PayeeBalanceAfterTransaction, newTransaction.IsTestTransaction, newTransaction.AccessChannelId, newTransaction.SourceUserName, newTransaction.DestinationUserName, newTransaction.TransactionStatusId, newTransaction.ThirdPartyTransactionId, newTransaction.ReversedTransactionOriginalTypeId, newTransaction.ReversedTransactionOriginalTypeId.Value });
+                      //  TransactionType transactionType = GetTransactionTypeByTransactionTypeId(transactionTypeId);
 
-                        connection.Close();
+                        //string docNumber = "BC" + Guid.NewGuid().ToString().Replace('-', '.').Take(6);
+                        // Town town = new SetUpRepository().GetTownByTownId(townId);
 
-                        if (affectedRows == 1)
-                        {
-                            PaymentInstrument updatePayerNewBal = UpdatePaymentInstrument(newTransaction.PayerBalanceAfterTransaction.Value, payerPi.CustomerId);
-                            PaymentInstrument updatePayeeNewBal = UpdatePaymentInstrument(newTransaction.PayeeBalanceAfterTransaction.Value, payeePi.CustomerId);
-
-                            TransactionTypeCategory type = GetTransactionTypeCategoryByTransactionTypeId(transactionTypeId).FirstOrDefault();
-
-                            TransactionType transactionType = GetTransactionTypeByTransactionTypeId(transactionTypeId);
-
-                            //string docNumber = "BC" + Guid.NewGuid().ToString().Replace('-', '.').Take(6);
-                            // Town town = new SetUpRepository().GetTownByTownId(townId);
-
-                            //new ReceiptRepository().SendPDFEmail(town.TownName, transactionType.TransactionTypeName, keyIdentifier, type.Amount.ToString(), newTransaction.TransactionReference, type.TransactionTypeCategoryName, newTransaction.TransactionReference, idNumber, email);
-                        }
-
-                        return affectedRows;
+                        //new ReceiptRepository().SendPDFEmail(town.TownName, transactionType.TransactionTypeName, keyIdentifier, type.Amount.ToString(), newTransaction.TransactionReference, type.TransactionTypeCategoryName, newTransaction.TransactionReference, idNumber, email);
                     }
+
+                    return affectedRows;
                 }
+                // }
             }
             catch (Exception ex)
             {

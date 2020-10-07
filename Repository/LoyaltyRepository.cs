@@ -76,51 +76,6 @@ namespace Hook.Repository
             }
         }
 
-        //public CustomerLoyaltyPoint CreatePoints(int organizationId, long paymentInstrumentId, long amount)
-        //{
-        //    try
-        //    {
-        //        double percentage = 0.02;
-
-        //        double points1 = amount * percentage;
-
-        //        long points = long.Parse(points1.ToString());
-        //        CustomerLoyaltyPoint customerLoyaltyPoint = GetCustomerLoyaltyPointByMinified(organizationId, paymentInstrumentId);
-
-        //        if (customerLoyaltyPoint != null)
-        //        {
-        //            using (var connection = new SqlConnection(sqlConnectionString))
-        //            {
-        //                connection.Open();
-        //                var affectedRows = connection.Execute("UPDATE CustomerLoyaltyPoint SET CumulativePoints=@CumulativePoints, CumulativeTransactionAmount=@CumulativeTransactionAmount WHERE CustomerLoyaltyPointId = @CustomerLoyaltyPointId", new { CumulativePoints = customerLoyaltyPoint.CumulativePoints + points, CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount + amount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId });
-
-        //                connection.Close();
-
-        //                return GetCustomerLoyaltyPointByMinified(organizationId, paymentInstrumentId);
-        //            }
-
-        //        }
-        //        else
-        //        {
-        //            long cumulativeFeeAmount = 0;
-        //            using (var connection = new SqlConnection(sqlConnectionString))
-        //            {
-        //                connection.Open();
-        //                var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId, @CumulativeFeeAmount, @CumulativePoints,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, cumulativeFeeAmount, points, amount, organizationId });
-
-        //                connection.Close();
-
-        //                return GetCustomerLoyaltyPointByMinified(organizationId, paymentInstrumentId);
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw new Exception(ex.Message);
-        //    }
-        //}
-
-
         public CustomerLoyaltyPoint CreatePoints(int organizationId, long paymentInstrumentId, long amount, string refererRefNo, int operationType, long senderCustomerId, long receivingMsisdn)
         {
             CustomerRepository customerRepository = new CustomerRepository();
@@ -134,11 +89,12 @@ namespace Hook.Repository
                 double refererPercentage = 0.01;
 
                 //have buyer points and referer points based on their points percentatges.
-                double points1 = amount * buyerPercentage;
-                double points2 = amount * refererPercentage;
+                double points1 = (amount * buyerPercentage) * 100;
+                double points2 = (amount * refererPercentage) * 100;
 
                 long buyerPoints = long.Parse(points1.ToString());
                 long refererPoints = long.Parse(points2.ToString());
+
 
                 Customer cust = customerRepository.GetCustomerByReferalNo(refererRefNo);
 
@@ -149,17 +105,17 @@ namespace Hook.Repository
                 {
                     customerLoyaltyPoint = GetCustomerLoyaltyPointsByPaymentInstrument(PI.PaymentInstrumentId);
 
-                    if (customerLoyaltyPoint != null)
-                    {
-                        customerLoyaltyPoint = AddPoints(organizationId, paymentInstrumentId, amount, buyerPoints, refererPoints, PI.PaymentInstrumentId, operationType, cust);
+                    //if (customerLoyaltyPoint != null)
+                    //{
+                    customerLoyaltyPoint = AddPoints(organizationId, paymentInstrumentId, amount, buyerPoints, refererPoints, PI.PaymentInstrumentId, operationType, cust);
 
-                        Customer sender = customerRepository.GetCustomerByCustomerId(senderCustomerId);
-                        ////Send Buy Airtime Sms 
-                        //messageRepository.PurchaseAirtimeSms(sender, receivingMsisdn, amount, DateTime.Now, "", customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance, true, "", true);
+                  //  Customer sender = customerRepository.GetCustomerByCustomerId(senderCustomerId);
+                    ////Send Buy Airtime Sms 
+                    //messageRepository.PurchaseAirtimeSms(sender, receivingMsisdn, amount, DateTime.Now, "", customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance, true, "", true);
 
-                        return new CustomerLoyaltyPoint { CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount, CumulativePoints = customerLoyaltyPoint.CumulativePoints, CumulativeFeeAmount = customerLoyaltyPoint.CumulativeFeeAmount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId, IsFrozen = customerLoyaltyPoint.IsFrozen, OrganizationId = customerLoyaltyPoint.OrganizationId, PaymentInstrumentId = customerLoyaltyPoint.PaymentInstrumentId, AvailablePoints = customerLoyaltyPoint.AvailablePoints };
-                    }
-                    else { return null; }
+                    return new CustomerLoyaltyPoint { CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount, CumulativePoints = customerLoyaltyPoint.CumulativePoints, CumulativeFeeAmount = customerLoyaltyPoint.CumulativeFeeAmount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId, IsFrozen = customerLoyaltyPoint.IsFrozen, OrganizationId = customerLoyaltyPoint.OrganizationId, PaymentInstrumentId = customerLoyaltyPoint.PaymentInstrumentId, AvailablePoints = customerLoyaltyPoint.AvailablePoints };
+                    //}
+                    //else { return null; }
 
                 }
                 else
@@ -194,7 +150,10 @@ namespace Hook.Repository
                             connection.Close();
                         }
 
-                        Customer sender = customerRepository.GetCustomerByCustomerId(senderCustomerId);
+                      //  Customer sender = customerRepository.GetCustomerByCustomerId(senderCustomerId);
+
+                        transactionRepository.MakeTransaction(PI.CustomerId, 1, amount, 1);
+
                         ////Send Buy Airtime Sms 
                         //messageRepository.PurchaseAirtimeSms(sender, receivingMsisdn, amount, DateTime.Now, "", customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance, true, "", true);
 
@@ -203,18 +162,17 @@ namespace Hook.Repository
                     else
                     {
                         // customerLoyaltyPoint = context.CustomerLoyaltyPoints.Add(new CustomerLoyaltyPoint { PaymentInstrumentId = paymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = buyerPoints, IsFrozen = false, CumulativeTransactionAmount = amount, OrganizationId = organizationId });
+                        PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(paymentInstrumentId);
 
                         //Add fresh points to a fresh customer
                         using (var connection = new SqlConnection(sqlConnectionString))
                         {
                             connection.Open();
-                            var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, CumulativeFeeAmount = 0, buyerPoints, IsFrozen = false, amount, organizationId });
+                            var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount,CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId,CustomerId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId,@CustomerId)", new { PaymentInstrumentId = PIs.PaymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = buyerPoints, IsFrozen = false, CumulativeTransactionAmount = amount, OrganizationId = organizationId, CustomerId = PIs.CustomerId });
 
                             connection.Close();
                         }
 
-
-                        PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(paymentInstrumentId);
                         PIs.LoyaltyPointBalance = buyerPoints;
                         PIs.AccountBalance = buyerPoints;
                         //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
@@ -228,6 +186,8 @@ namespace Hook.Repository
 
                             connection.Close();
                         }
+
+                        transactionRepository.MakeTransaction(PIs.CustomerId, 1, amount, 1);
 
                         return new CustomerLoyaltyPoint { CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount, CumulativePoints = customerLoyaltyPoint.CumulativePoints, CumulativeFeeAmount = customerLoyaltyPoint.CumulativeFeeAmount, CustomerLoyaltyPointId = customerLoyaltyPoint.CustomerLoyaltyPointId, IsFrozen = customerLoyaltyPoint.IsFrozen, OrganizationId = customerLoyaltyPoint.OrganizationId, PaymentInstrumentId = customerLoyaltyPoint.PaymentInstrumentId, AvailablePoints = customerLoyaltyPoint.AvailablePoints };
                     }
@@ -262,7 +222,7 @@ namespace Hook.Repository
                     customerLoyaltyPoint.CumulativePoints = customerLoyaltyPoint.CumulativePoints + buyerPoints;
                     customerLoyaltyPoint.CumulativeTransactionAmount = customerLoyaltyPoint.CumulativeTransactionAmount + amount;
 
-                    PI = transactionRepository.GetPaymentInstrumentByCustomerId(customerLoyaltyPoint.CustomerId);
+                    PI = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(customerLoyaltyPoint.PaymentInstrumentId);
 
                     PI.LoyaltyPointBalance = PI.LoyaltyPointBalance + buyerPoints;
                     PI.AccountBalance = PI.AccountBalance + buyerPoints;
@@ -285,6 +245,7 @@ namespace Hook.Repository
                         connection.Close();
                     }
 
+                    transactionRepository.MakeTransaction(PI.CustomerId, 1, amount, 1);
 
                     //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance + buyerPoints;
                     //customerLoyaltyPoint.PaymentInstrument.AccountBalance = customerLoyaltyPoint.PaymentInstrument.AccountBalance + buyerPoints;
@@ -300,17 +261,17 @@ namespace Hook.Repository
                     //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
                     //customerLoyaltyPoint.PaymentInstrument.AccountBalance = buyerPoints;
                     //context.SaveChanges();
+                    PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(paymentInstrumentId);
 
                     //Add fresh points to a fresh customer
                     using (var connection = new SqlConnection(sqlConnectionString))
                     {
                         connection.Open();
-                        var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, CumulativeFeeAmount = 0, buyerPoints, IsFrozen = false, amount, organizationId });
+                        var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId,CustomerId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId,@CustomerId)", new { PaymentInstrumentId = PIs.PaymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = buyerPoints, IsFrozen = false, CumulativeTransactionAmount = amount, OrganizationId = organizationId, CustomerId = PIs.CustomerId });
 
                         connection.Close();
                     }
 
-                    PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(paymentInstrumentId);
                     PIs.LoyaltyPointBalance = buyerPoints;
                     PIs.AccountBalance = buyerPoints;
                     //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
@@ -324,6 +285,8 @@ namespace Hook.Repository
 
                         connection.Close();
                     }
+
+                    transactionRepository.MakeTransaction(PIs.CustomerId, 1, amount, 1);
                 }
 
                 //Referer Loyalty Points
@@ -360,6 +323,7 @@ namespace Hook.Repository
 
                         connection.Close();
                     }
+
                 }
                 else
                 {
@@ -370,16 +334,16 @@ namespace Hook.Repository
                     //refererLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = refererPoints;
                     //refererLoyaltyPoint.PaymentInstrument.AccountBalance = refererPoints;
                     //context.SaveChanges();
+                    PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(refererPaymentInstrumentId);
 
                     using (var connection = new SqlConnection(sqlConnectionString))
                     {
                         connection.Open();
-                        var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, CumulativeFeeAmount = 0, refererPoints, IsFrozen = false, amount, organizationId });
+                        var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId,CustomerId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId,@CustomerId)", new { PaymentInstrumentId = PIs.PaymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = refererPoints, IsFrozen = false, CumulativeTransactionAmount = 0, OrganizationId = organizationId, CustomerId = PIs.CustomerId });
 
                         connection.Close();
                     }
 
-                    PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(refererLoyaltyPoint.PaymentInstrumentId);
                     PIs.LoyaltyPointBalance = refererPoints;
                     PIs.AccountBalance = refererPoints;
                     //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
@@ -446,16 +410,16 @@ namespace Hook.Repository
                             //levelOneRefererLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = refererPoints;
                             //levelOneRefererLoyaltyPoint.PaymentInstrument.AccountBalance = refererPoints;
                             //context.SaveChanges();
+                            PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(refererLoyaltyPoint.PaymentInstrumentId);
 
                             using (var connection = new SqlConnection(sqlConnectionString))
                             {
                                 connection.Open();
-                                var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, CumulativeFeeAmount = 0, refererPoints, IsFrozen = false, amount, organizationId });
+                                var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount,CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId,CustomerId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId,@CustomerId)", new { PaymentInstrumentId = PIs.PaymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = refererPoints, IsFrozen = false, CumulativeTransactionAmount = amount, OrganizationId = organizationId, CustomerId = PIs.CustomerId });
 
                                 connection.Close();
                             }
 
-                            PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(refererLoyaltyPoint.PaymentInstrumentId);
                             PIs.LoyaltyPointBalance = refererPoints;
                             PIs.AccountBalance = refererPoints;
                             //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
@@ -514,16 +478,16 @@ namespace Hook.Repository
                     //customerLoyaltyPoint.PaymentInstrument.AccountBalance = buyerPoints;
                     //context.SaveChanges();
 
+                    PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(customerLoyaltyPoint.PaymentInstrumentId);
+
 
                     using (var connection = new SqlConnection(sqlConnectionString))
                     {
                         connection.Open();
-                        var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId)", new { paymentInstrumentId, CumulativeFeeAmount = 0, buyerPoints, IsFrozen = false, amount, organizationId });
+                        var affectedRows = connection.Execute("INSERT INTO CustomerLoyaltyPoint (PaymentInstrumentId, CumulativeFeeAmount, CumulativePoints,IsFrozen,CumulativeTransactionAmount,OrganizationId,CustomerId) VALUES (@PaymentInstrumentId,@CumulativeFeeAmount,@CumulativePoints,@IsFrozen,@CumulativeTransactionAmount,@OrganizationId,@CustomerId)", new { PaymentInstrumentId = PIs.PaymentInstrumentId, CumulativeFeeAmount = 0, CumulativePoints = buyerPoints, IsFrozen = false, CumulativeTransactionAmount = amount, OrganizationId = organizationId, CustomerId = PIs.CustomerId });
 
                         connection.Close();
                     }
-
-                    PaymentInstrument PIs = transactionRepository.GetPaymentInstrumentByPaymentInstrumentId(customerLoyaltyPoint.PaymentInstrumentId);
                     PIs.LoyaltyPointBalance = buyerPoints;
                     PIs.AccountBalance = buyerPoints;
                     //customerLoyaltyPoint.PaymentInstrument.LoyaltyPointBalance = buyerPoints;
@@ -538,7 +502,7 @@ namespace Hook.Repository
                     }
                 }
 
-               // context.SaveChanges();
+                // context.SaveChanges();
             }
 
             return customerLoyaltyPoint;
