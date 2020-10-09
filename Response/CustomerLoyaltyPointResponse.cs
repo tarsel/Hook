@@ -15,7 +15,7 @@ namespace Hook.Response
         [JsonProperty("cumulative_fee_amount")]
         public long CumulativeFeeAmount { get; set; }
         [JsonProperty("cumulative_points")]
-        public long CumulativePoints { get; set; }
+        public double CumulativePoints { get; set; }
         [JsonProperty("cumulative_transaction_amount")]
         public long CumulativeTransactionAmount { get; set; }
         [JsonProperty("is_frozen")]

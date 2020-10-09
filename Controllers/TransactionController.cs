@@ -96,7 +96,7 @@ namespace Hook.Controllers
             {
                 CustomerLoyaltyPoint dto = transactionRepository.CheckPointsBalance(request.PaymentInstrumentId);
 
-                return Ok(new CustomerLoyaltyPointResponse { CumulativeFeeAmount = dto.CumulativeFeeAmount, CumulativePoints = dto.CumulativePoints, CumulativeTransactionAmount = dto.CumulativeTransactionAmount, CustomerLoyaltyPointId = dto.CustomerLoyaltyPointId, IsFrozen = dto.IsFrozen, Message = "Processed Successfully!", OrganizationId = dto.OrganizationId, PaymentInstrumentId = dto.PaymentInstrumentId, StatusCode = (int)HttpStatusCode.OK });
+                return Ok(new CustomerLoyaltyPointResponse { CumulativeFeeAmount = dto.CumulativeFeeAmount, CumulativePoints = dto.CumulativePoints / 100, CumulativeTransactionAmount = dto.CumulativeTransactionAmount, CustomerLoyaltyPointId = dto.CustomerLoyaltyPointId, IsFrozen = dto.IsFrozen, Message = "Processed Successfully!", OrganizationId = dto.OrganizationId, PaymentInstrumentId = dto.PaymentInstrumentId, StatusCode = (int)HttpStatusCode.OK });
             }
             catch (Exception ex)
             {
