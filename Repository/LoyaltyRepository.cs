@@ -562,7 +562,7 @@ namespace Hook.Repository
             BillPaymentRepository billRepository = new BillPaymentRepository();
             CustomerRepository customerRepository = new CustomerRepository();
 
-            string loyaltyBillerNumber = "111111";
+            string loyaltyBillerNumber = "100001";
             Biller biller = billRepository.GetBillerByBillerNumber(loyaltyBillerNumber);
 
             if (biller == null)
